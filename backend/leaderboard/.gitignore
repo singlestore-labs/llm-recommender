@@ -1,0 +1,16 @@
+auto_evals/
+venv/
+__pycache__/
+.env
+.ipynb_checkpoints
+*ipynb
+.vscode/
+
+gpt_4_evals/
+human_evals/
+eval-queue/
+eval-results/
+auto_evals/
+
+src/assets/model_counts.html
+./data
