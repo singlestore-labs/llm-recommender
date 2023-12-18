@@ -34,7 +34,7 @@ def create_dataset():
     update_collections(raw_df.copy())
 
     df = (
-        raw_df[["model", "author", "model_name_for_query", "average", "likes", "link", "still_on_hub"]]
+        raw_df[["model", "author", "model_name_for_query", "average", "link", "still_on_hub"]]
         .rename(columns={"model": "name", "model_name_for_query": "repo_id", "average": "score"})
     )
 
