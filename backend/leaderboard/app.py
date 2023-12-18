@@ -32,15 +32,15 @@ def create_dataset():
     raw_df = get_leaderboard_df(EVAL_RESULTS_PATH, EVAL_REQUESTS_PATH, COLS, BENCHMARK_COLS)
     update_collections(raw_df.copy())
 
-    raw_df.to_json('leaderboard_raw.json', orient='records')
+    raw_df.to_json('./backend/leaderboard/leaderboard_raw.json', orient='records')
 
     df = (
         raw_df[["model", "author", "model_name_for_query", "average", "likes", "link", "still_on_hub"]]
         .rename(columns={"model": "name", "model_name_for_query": "query_name", "average": "score"})
     )
 
-    df.to_json('leaderboard.json', orient='records')
+    df.to_json('./backend/leaderboard/leaderboard.json', orient='records')
 
 
 # download_results()
-create_dataset()
+# create_dataset()
