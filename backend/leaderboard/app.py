@@ -1,3 +1,4 @@
+import requests
 from huggingface_hub import snapshot_download
 
 from src.display.utils import (
@@ -28,6 +29,13 @@ def download_results():
         print(e)
 
 
+def get_hf_model_readme(full_name):
+    base_url = "https://huggingface.co/api/models"
+    response = requests.get(f'{base_url}/{full_name}')
+    data = response.json()
+    print(data)
+
+
 def create_dataset():
     raw_df = get_leaderboard_df(EVAL_RESULTS_PATH, EVAL_REQUESTS_PATH, COLS, BENCHMARK_COLS)
     update_collections(raw_df.copy())
@@ -36,11 +44,12 @@ def create_dataset():
 
     df = (
         raw_df[["model", "author", "model_name_for_query", "average", "likes", "link", "still_on_hub"]]
-        .rename(columns={"model": "name", "model_name_for_query": "query_name", "average": "score"})
+        .rename(columns={"model": "name", "model_name_for_query": "full_name", "average": "score"})
     )
 
     df.to_json('./backend/leaderboard/leaderboard.json', orient='records')
 
 
 # download_results()
-# create_dataset()
+create_dataset()
+# get_hf_model_readme('go-bruins-v2.1.1')
