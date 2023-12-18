@@ -38,7 +38,8 @@ def create_models_table():
                 link VARCHAR(255) NOT NULL,
                 still_on_hub BOOLEAN NOT NULL,
                 downloads INT,
-                likes INT
+                likes INT,
+                readme TEXT
             )
         ''')
 
@@ -58,7 +59,19 @@ def fill_models_table():
             ''', values)
 
 
+def get_models(select='*'):
+    with db_connection.cursor() as cursor:
+        cursor.execute(f'SELECT {select} FROM models')
+        return cursor.fetchall()
+
+
+def get_models_repo_id_df():
+    repo_ids = [i[0] for i in get_models('repo_id')]
+    return pd.DataFrame({'repo_id': repo_ids})
+
+
 def init_database():
+    # drop_table('models')
     create_models_table()
     fill_models_table()
 
@@ -69,7 +82,11 @@ def get_hf_model_details(repo_id: str):
 
     if response.status_code == 200:
         data = response.json()
-        return {'downloads': data['downloads'], 'likes': data['likes'], 'created_at': data['createdAt']}
+        return {
+            'downloads': data.get('downloads', 0),
+            'likes': data.get('likes', 0),
+            'created_at': data.get('createdAt')
+        }
     else:
         return None
 
@@ -82,3 +99,10 @@ def get_hf_model_readme(repo_id: str):
         return response.text
     else:
         return None
+
+
+def update_models():
+    df = get_models_repo_id_df()
+
+    for i, row in df.iterrows():
+        details = get_hf_model_details(row['repo_id'])
