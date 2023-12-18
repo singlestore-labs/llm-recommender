@@ -7,7 +7,8 @@ REPO_ID = "HuggingFaceH4/open_llm_leaderboard"
 QUEUE_REPO = "open-llm-leaderboard/requests"
 RESULTS_REPO = "open-llm-leaderboard/results"
 
-DATA_PATH = os.getenv("HF_HOME", "./backend/leaderboard/data")
+DATA_PATH = os.getenv("HF_HOME", os.path.abspath('leaderboard/data'))
+DATASETS_PATH = os.path.abspath('leaderboard/datasets')
 
 EVAL_REQUESTS_PATH = os.path.join(DATA_PATH, "eval-queue")
 EVAL_RESULTS_PATH = os.path.join(DATA_PATH, "eval-results")

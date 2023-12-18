@@ -1,4 +1,4 @@
-import requests
+import pandas as pd
 from huggingface_hub import snapshot_download
 
 from src.display.utils import (
@@ -6,7 +6,7 @@ from src.display.utils import (
     COLS
 )
 
-from src.envs import EVAL_REQUESTS_PATH, EVAL_RESULTS_PATH, QUEUE_REPO,  RESULTS_REPO
+from src.envs import EVAL_REQUESTS_PATH, EVAL_RESULTS_PATH, QUEUE_REPO, RESULTS_REPO, DATASETS_PATH
 from src.populate import get_leaderboard_df
 from src.tools.collections import update_collections
 
@@ -29,27 +29,17 @@ def download_results():
         print(e)
 
 
-def get_hf_model_readme(full_name):
-    base_url = "https://huggingface.co/api/models"
-    response = requests.get(f'{base_url}/{full_name}')
-    data = response.json()
-    print(data)
-
-
 def create_dataset():
     raw_df = get_leaderboard_df(EVAL_RESULTS_PATH, EVAL_REQUESTS_PATH, COLS, BENCHMARK_COLS)
     update_collections(raw_df.copy())
 
-    raw_df.to_json('./backend/leaderboard/leaderboard_raw.json', orient='records')
-
     df = (
         raw_df[["model", "author", "model_name_for_query", "average", "likes", "link", "still_on_hub"]]
-        .rename(columns={"model": "name", "model_name_for_query": "full_name", "average": "score"})
+        .rename(columns={"model": "name", "model_name_for_query": "repo_id", "average": "score"})
     )
 
-    df.to_json('./backend/leaderboard/leaderboard.json', orient='records')
+    df.to_json(f'{DATASETS_PATH}/leaderboard.json', orient='records')
 
 
-# download_results()
+download_results()
 create_dataset()
-# get_hf_model_readme('go-bruins-v2.1.1')
