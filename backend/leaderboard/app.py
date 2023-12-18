@@ -34,12 +34,13 @@ def create_dataset():
     update_collections(raw_df.copy())
 
     df = (
-        raw_df[["model", "author", "model_name_for_query", "average", "link", "still_on_hub"]]
+        raw_df[raw_df['author'].notna()]
+        [["model", "author", "model_name_for_query", "average", "link", "still_on_hub"]]
         .rename(columns={"model": "name", "model_name_for_query": "repo_id", "average": "score"})
     )
 
     df.to_json(f'{DATASETS_PATH}/leaderboard.json', orient='records')
 
 
-download_results()
+# download_results()
 create_dataset()

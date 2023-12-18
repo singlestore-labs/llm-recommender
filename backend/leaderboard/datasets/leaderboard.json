@@ -15816,14 +15816,6 @@
     "still_on_hub": false
   },
   {
-    "name": "<p>Baseline</p>",
-    "author": null,
-    "repo_id": "baseline",
-    "score": 31.0,
-    "link": null,
-    "still_on_hub": null
-  },
-  {
     "name": "GPTNeo350M-Instruct-SFT",
     "author": "SummerSigh",
     "repo_id": "SummerSigh/GPTNeo350M-Instruct-SFT",
