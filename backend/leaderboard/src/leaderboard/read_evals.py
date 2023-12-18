@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import dateutil
 import numpy as np
 
-from src.display.formatting import make_clickable_model
+from src.display.formatting import make_clickable_model, make_model_link
 from src.display.utils import AutoEvalColumn, ModelType, Tasks, Precision, WeightType
 from src.submission.check_validity import is_model_on_hub
 
@@ -132,7 +132,7 @@ class EvalResult:
             AutoEvalColumn.model_type_symbol.name: self.model_type.value.symbol,
             AutoEvalColumn.weight_type.name: self.weight_type.value.name,
             AutoEvalColumn.architecture.name: self.architecture,
-            AutoEvalColumn.model.name: make_clickable_model(self.full_model),
+            AutoEvalColumn.model.name: self.model,
             AutoEvalColumn.dummy.name: self.full_model,
             AutoEvalColumn.revision.name: self.revision,
             AutoEvalColumn.average.name: average,
@@ -140,6 +140,7 @@ class EvalResult:
             AutoEvalColumn.likes.name: self.likes,
             AutoEvalColumn.params.name: self.num_params,
             AutoEvalColumn.still_on_hub.name: self.still_on_hub,
+            "link": make_model_link(self.full_model)
         }
 
         for task in Tasks:

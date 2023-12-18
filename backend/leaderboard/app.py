@@ -9,8 +9,6 @@ from src.envs import EVAL_REQUESTS_PATH, EVAL_RESULTS_PATH, QUEUE_REPO,  RESULTS
 from src.populate import get_leaderboard_df
 from src.tools.collections import update_collections
 
-# pip install huggingface-hub pandas transformers
-
 
 def download_results():
     try:
@@ -36,4 +34,5 @@ def create_dataset():
     df.to_json('leaderboard.json', orient='records')
 
 
+# download_results()
 create_dataset()

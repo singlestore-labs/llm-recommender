@@ -11,5 +11,10 @@ def make_clickable_model(model_name):
     return model_hyperlink(link, model_name) + "  " + model_hyperlink(details_link, "📑")
 
 
+def make_model_link(model_name):
+    link = f"https://huggingface.co/{model_name}"
+    return link
+
+
 def has_no_nan_values(df, columns):
     return df[columns].notna().all(axis=1)

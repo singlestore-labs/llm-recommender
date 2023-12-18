@@ -3,6 +3,7 @@ from enum import Enum
 
 import pandas as pd
 
+
 def fields(raw_class):
     return [v for k, v in raw_class.__dict__.items() if k[:2] != "__" and k[-2:] != "__"]
 
@@ -13,17 +14,20 @@ class Task:
     metric: str
     col_name: str
 
+
 class Tasks(Enum):
-    arc = Task("arc:challenge", "acc_norm", "ARC")
-    hellaswag = Task("hellaswag", "acc_norm", "HellaSwag")
-    mmlu = Task("hendrycksTest", "acc", "MMLU")
-    truthfulqa = Task("truthfulqa:mc", "mc2", "TruthfulQA")
-    winogrande = Task("winogrande", "acc", "Winogrande")
-    gsm8k = Task("gsm8k", "acc", "GSM8K")
+    arc = Task("arc:challenge", "acc_norm", "arc")
+    hellaswag = Task("hellaswag", "acc_norm", "hellaswag")
+    mmlu = Task("hendrycksTest", "acc", "mmlu")
+    truthfulqa = Task("truthfulqa:mc", "mc2", "truthfulqa")
+    winogrande = Task("winogrande", "acc", "winogrande")
+    gsm8k = Task("gsm8k", "acc", "gsm8k")
 
 # These classes are for user facing column names,
 # to avoid having to change them all around the code
 # when a modif is needed
+
+
 @dataclass
 class ColumnContent:
     name: str
@@ -33,29 +37,32 @@ class ColumnContent:
     never_hidden: bool = False
     dummy: bool = False
 
+
 auto_eval_column_dict = []
 # Init
 auto_eval_column_dict.append(["model_type_symbol", ColumnContent, ColumnContent("T", "str", True, never_hidden=True)])
-auto_eval_column_dict.append(["model", ColumnContent, ColumnContent("Model", "markdown", True, never_hidden=True)])
-#Scores
-auto_eval_column_dict.append(["average", ColumnContent, ColumnContent("Average ⬆️", "number", True)])
+auto_eval_column_dict.append(["model", ColumnContent, ColumnContent("model", "markdown", True, never_hidden=True)])
+# Scores
+auto_eval_column_dict.append(["average", ColumnContent, ColumnContent("average", "number", True)])
 for task in Tasks:
     auto_eval_column_dict.append([task.name, ColumnContent, ColumnContent(task.value.col_name, "number", True)])
 # Model information
-auto_eval_column_dict.append(["model_type", ColumnContent, ColumnContent("Type", "str", False)])
-auto_eval_column_dict.append(["architecture", ColumnContent, ColumnContent("Architecture", "str", False)])
-auto_eval_column_dict.append(["weight_type", ColumnContent, ColumnContent("Weight type", "str", False, True)])
-auto_eval_column_dict.append(["precision", ColumnContent, ColumnContent("Precision", "str", False)])
-auto_eval_column_dict.append(["license", ColumnContent, ColumnContent("Hub License", "str", False)])
-auto_eval_column_dict.append(["params", ColumnContent, ColumnContent("#Params (B)", "number", False)])
-auto_eval_column_dict.append(["likes", ColumnContent, ColumnContent("Hub ❤️", "number", False)])
-auto_eval_column_dict.append(["still_on_hub", ColumnContent, ColumnContent("Available on the hub", "bool", False)])
-auto_eval_column_dict.append(["revision", ColumnContent, ColumnContent("Model sha", "str", False, False)])
+auto_eval_column_dict.append(["model_type", ColumnContent, ColumnContent("model_type", "str", False)])
+auto_eval_column_dict.append(["architecture", ColumnContent, ColumnContent("architecture", "str", False)])
+auto_eval_column_dict.append(["weight_type", ColumnContent, ColumnContent("weight_type", "str", False, True)])
+auto_eval_column_dict.append(["precision", ColumnContent, ColumnContent("precision", "str", False)])
+auto_eval_column_dict.append(["license", ColumnContent, ColumnContent("license", "str", False)])
+auto_eval_column_dict.append(["params", ColumnContent, ColumnContent("params", "number", False)])
+auto_eval_column_dict.append(["likes", ColumnContent, ColumnContent("likes", "number", False)])
+auto_eval_column_dict.append(["still_on_hub", ColumnContent, ColumnContent("still_on_hub", "bool", False)])
+auto_eval_column_dict.append(["revision", ColumnContent, ColumnContent("revision", "str", False, False)])
 # Dummy column for the search bar (hidden by the custom CSS)
 auto_eval_column_dict.append(["dummy", ColumnContent, ColumnContent("model_name_for_query", "str", False, dummy=True)])
+auto_eval_column_dict.append(["link", ColumnContent, ColumnContent("link", "str", False, dummy=False)])
 
 # We use make dataclass to dynamically fill the scores from Tasks
 AutoEvalColumn = make_dataclass("AutoEvalColumn", auto_eval_column_dict, frozen=True)
+
 
 @dataclass(frozen=True)
 class EvalQueueColumn:  # Queue column
@@ -105,10 +112,11 @@ human_baseline_row = {
     AutoEvalColumn.model_type.name: "",
 }
 
+
 @dataclass
 class ModelDetails:
     name: str
-    symbol: str = "" # emoji, only for the model type
+    symbol: str = ""  # emoji, only for the model type
 
 
 class ModelType(Enum):
@@ -133,10 +141,12 @@ class ModelType(Enum):
             return ModelType.IFT
         return ModelType.Unknown
 
+
 class WeightType(Enum):
     Adapter = ModelDetails("Adapter")
     Original = ModelDetails("Original")
     Delta = ModelDetails("Delta")
+
 
 class Precision(Enum):
     float16 = ModelDetails("float16")
@@ -158,8 +168,6 @@ class Precision(Enum):
         if precision in ["GPTQ", "None"]:
             return Precision.qt_GPTQ
         return Precision.Unknown
-        
-
 
 
 # Column selection
