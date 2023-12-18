@@ -35,9 +35,8 @@ def create_dataset():
     raw_df.to_json('leaderboard_raw.json', orient='records')
 
     df = (
-        raw_df[raw_df['still_on_hub'] == True]
-        [["model", "author", "average", "likes", "link"]]
-        .rename(columns={"model": "name", "average": "score"})
+        raw_df[["model", "author", "model_name_for_query", "average", "likes", "link", "still_on_hub"]]
+        .rename(columns={"model": "name", "model_name_for_query": "query_name", "average": "score"})
     )
 
     df.to_json('leaderboard.json', orient='records')
