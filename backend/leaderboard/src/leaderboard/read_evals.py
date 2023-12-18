@@ -2,6 +2,7 @@ import glob
 import json
 import math
 import os
+import re
 from dataclasses import dataclass
 
 import dateutil
@@ -133,6 +134,7 @@ class EvalResult:
             AutoEvalColumn.weight_type.name: self.weight_type.value.name,
             AutoEvalColumn.architecture.name: self.architecture,
             AutoEvalColumn.model.name: self.model,
+            "author": re.match("^[^/]*", self.full_model).group(),
             AutoEvalColumn.dummy.name: self.full_model,
             AutoEvalColumn.revision.name: self.revision,
             AutoEvalColumn.average.name: average,
@@ -140,7 +142,7 @@ class EvalResult:
             AutoEvalColumn.likes.name: self.likes,
             AutoEvalColumn.params.name: self.num_params,
             AutoEvalColumn.still_on_hub.name: self.still_on_hub,
-            "link": make_model_link(self.full_model)
+            "link": make_model_link(self.full_model),
         }
 
         for task in Tasks:

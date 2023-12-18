@@ -59,6 +59,7 @@ auto_eval_column_dict.append(["revision", ColumnContent, ColumnContent("revision
 # Dummy column for the search bar (hidden by the custom CSS)
 auto_eval_column_dict.append(["dummy", ColumnContent, ColumnContent("model_name_for_query", "str", False, dummy=True)])
 auto_eval_column_dict.append(["link", ColumnContent, ColumnContent("link", "str", False, dummy=False)])
+auto_eval_column_dict.append(["author", ColumnContent, ColumnContent("author", "str", False, dummy=False)])
 
 # We use make dataclass to dynamically fill the scores from Tasks
 AutoEvalColumn = make_dataclass("AutoEvalColumn", auto_eval_column_dict, frozen=True)
