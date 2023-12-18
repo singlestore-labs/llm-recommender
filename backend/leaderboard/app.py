@@ -29,8 +29,17 @@ def download_results():
 
 
 def create_dataset():
-    df = get_leaderboard_df(EVAL_RESULTS_PATH, EVAL_REQUESTS_PATH, COLS, BENCHMARK_COLS)
-    update_collections(df.copy())
+    raw_df = get_leaderboard_df(EVAL_RESULTS_PATH, EVAL_REQUESTS_PATH, COLS, BENCHMARK_COLS)
+    update_collections(raw_df.copy())
+
+    raw_df.to_json('leaderboard_raw.json', orient='records')
+
+    df = (
+        raw_df[raw_df['still_on_hub'] == True]
+        [["model", "author", "average", "likes", "link"]]
+        .rename(columns={"model": "name", "average": "score"})
+    )
+
     df.to_json('leaderboard.json', orient='records')
 
 
