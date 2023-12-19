@@ -1,9 +1,8 @@
-from typing import Union, List
 import os
-import json
 import openai
-import singlestoredb as s2
+import numpy as np
 import pandas as pd
+import singlestoredb as s2
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -22,9 +21,14 @@ def drop_table(table_name: str):
         cursor.execute(f'DROP TABLE IF EXISTS {DB_NAME}.{table_name}')
 
 
-def get_models(select='*', as_dict=True):
+def get_models(select='*', query='', as_dict=True):
     with db_connection.cursor() as cursor:
-        cursor.execute(f'SELECT {select} FROM models')
+        _query = f'SELECT {select} FROM models'
+
+        if query:
+            _query += f' {query}'
+
+        cursor.execute(_query)
 
         if as_dict:
             columns = [desc[0] for desc in cursor.description]
@@ -55,13 +59,30 @@ def string_into_chunks(string: str, max_length=2048):
     return chunks
 
 
-def create_embeddings(input: Union[str, List[str]]) -> List[float]:
+def create_embeddings(input):
     data = openai.embeddings.create(input=input, model='text-embedding-ada-002').data
     return [i.embedding for i in data]
 
 
-def create_avg_embeddings(input: Union[str, List[str]]) -> List[float]:
-    return create_embeddings(input)
+def create_avg_embeddings(input: str):
+    chunks = string_into_chunks(input, 2048)
+    embeddings = create_embeddings(chunks)
+    return np.mean(np.array(embeddings), axis=0).tolist()
+
+
+def search(query: str, min_similarity=0, limit=10):
+    query_embedding = create_embeddings(query)[0]
+
+    with db_connection.cursor() as cursor:
+        cursor.execute(f'''
+          SELECT model_repo_id, DOT_PRODUCT(JSON_ARRAY_PACK(%s), embedding) as similarity
+          FROM model_embeddings
+          WHERE similarity > {min_similarity}
+          ORDER BY similarity DESC
+          LIMIT %s
+        ''', [str(query_embedding), limit])
+
+        return cursor.fetchall()
 
 
 def init_database():
@@ -96,7 +117,7 @@ def init_database():
                 cursor.execute(f'''
                     CREATE TABLE IF NOT EXISTS model_embeddings (
                         id INT AUTO_INCREMENT PRIMARY KEY,
-                        model_id INT,
+                        model_repo_id VARCHAR(512),
                         embedding BLOB
                     )
                 ''')
@@ -110,14 +131,14 @@ def init_database():
             has_models = bool(cursor.fetchall()[0][0])
 
         def fill_models_table():
-            with db_connection.cursor() as cursor:
-                if not has_models:
+            if not has_models:
+                with db_connection.cursor() as cursor:
                     leaderboard_df = load_leaderboard_df()
                     leaderboard_df.drop('created_at', axis=1, inplace=True)
-                    values = leaderboard_df.to_records(index=True).tolist()
+                    values = leaderboard_df.to_records(index=False).tolist()
                     cursor.executemany(f'''
-                        INSERT INTO models (id, name, author, repo_id, score, link, still_on_hub, readme, downloads, likes)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        INSERT INTO models (name, author, repo_id, score, link, still_on_hub, readme, downloads, likes)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                     ''', values)
 
         def fill_model_embeddings_table():
@@ -126,20 +147,24 @@ def init_database():
                 has_model_embeddings = bool(cursor.fetchall()[0][0])
 
                 if not has_models or not has_model_embeddings:
-                    models = get_models()[:2]
-                    values = [[i['id'], create_avg_embeddings(str(i))] for i in models]
+                    models = get_models(query='ORDER BY score DESC')[:1]
+                    values = [[i['repo_id'], str(create_avg_embeddings(str(i)))] for i in models]
+
+                    df = pd.DataFrame(values, columns=['model_repo_id', 'embedding'])
+                    df.to_json(os.path.abspath('datasets/model_embeddings.json'), orient='records')
+
                     cursor.executemany(f'''
-                        INSERT INTO model_embeddings (model_id, embedding)
+                        INSERT INTO model_embeddings (model_repo_id, embedding)
                         VALUES (%s, JSON_ARRAY_PACK(%s))
                     ''', values)
 
         fill_models_table()
         fill_model_embeddings_table()
 
-    # drop_table('models')
-    # drop_table('model_embeddings')
-    # create_tables()
-    # fill_tables()
+    drop_table('models')
+    drop_table('model_embeddings')
+    create_tables()
+    fill_tables()
 
 
 init_database()
