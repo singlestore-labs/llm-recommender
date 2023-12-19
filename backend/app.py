@@ -70,13 +70,13 @@ def create_avg_embeddings(input: str):
     return np.mean(np.array(embeddings), axis=0).tolist()
 
 
-def search(query: str, min_similarity=0, limit=10):
+def search(query: str,  table_name: str, select='*', min_similarity=0, limit=10):
     query_embedding = create_embeddings(query)[0]
 
     with db_connection.cursor() as cursor:
         cursor.execute(f'''
-          SELECT model_repo_id, DOT_PRODUCT(JSON_ARRAY_PACK(%s), embedding) as similarity
-          FROM model_embeddings
+          SELECT {select}, DOT_PRODUCT(JSON_ARRAY_PACK(%s), embedding) as similarity
+          FROM {table_name}
           WHERE similarity > {min_similarity}
           ORDER BY similarity DESC
           LIMIT %s
@@ -104,10 +104,16 @@ def init_database():
                         author VARCHAR(512) NOT NULL,
                         repo_id VARCHAR(1024) NOT NULL,
                         score DECIMAL(5, 2) NOT NULL,
+                        arc DECIMAL(5, 2) NOT NULL,
+                        hellaswag DECIMAL(5, 2) NOT NULL,
+                        mmlu DECIMAL(5, 2) NOT NULL,
+                        truthfulqa DECIMAL(5, 2) NOT NULL,
+                        winogrande DECIMAL(5, 2) NOT NULL,
+                        gsm8k DECIMAL(5, 2) NOT NULL,
                         link VARCHAR(255) NOT NULL,
-                        still_on_hub BOOLEAN NOT NULL,
                         downloads INT,
                         likes INT,
+                        still_on_hub BOOLEAN NOT NULL,
                         readme LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci
                     )
                 ''')
@@ -137,8 +143,8 @@ def init_database():
                     leaderboard_df.drop('created_at', axis=1, inplace=True)
                     values = leaderboard_df.to_records(index=False).tolist()
                     cursor.executemany(f'''
-                        INSERT INTO models (name, author, repo_id, score, link, still_on_hub, readme, downloads, likes)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        INSERT INTO models (name, author, repo_id, score, link, still_on_hub, arc, hellaswag, mmlu, truthfulqa, winogrande, gsm8k, readme, downloads, likes)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     ''', values)
 
         def fill_model_embeddings_table():
@@ -147,7 +153,7 @@ def init_database():
                 has_model_embeddings = bool(cursor.fetchall()[0][0])
 
                 if not has_models or not has_model_embeddings:
-                    models = get_models(query='ORDER BY score DESC')[:1]
+                    models = get_models(query='ORDER BY score DESC')[:10]
                     values = [[i['repo_id'], str(create_avg_embeddings(str(i)))] for i in models]
 
                     df = pd.DataFrame(values, columns=['model_repo_id', 'embedding'])
@@ -161,8 +167,8 @@ def init_database():
         fill_models_table()
         fill_model_embeddings_table()
 
-    drop_table('models')
-    drop_table('model_embeddings')
+    # drop_table('models')
+    # drop_table('model_embeddings')
     create_tables()
     fill_tables()
 
