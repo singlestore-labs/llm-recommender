@@ -34,7 +34,7 @@ def init_database():
                     still_on_hub BOOLEAN NOT NULL,
                     downloads INT,
                     likes INT,
-                    readme TEXT
+                    readme LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci
                 )
             ''')
 
@@ -45,11 +45,11 @@ def init_database():
 
             if not has_records:
                 leaderboard_df = load_leaderboard_df()
+                leaderboard_df.drop('created_at', axis=1, inplace=True)
                 values = leaderboard_df.to_records(index=True).tolist()
-
                 cursor.executemany(f'''
-                    INSERT INTO models (id, name, author, repo_id, score, link, still_on_hub)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    INSERT INTO models (id, name, author, repo_id, score, link, still_on_hub, readme, downloads, likes)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ''', values)
 
     # drop_table('models')
@@ -75,3 +75,6 @@ def get_models_repo_id_df():
 
 def update_models():
     df = get_models_repo_id_df()
+
+
+init_database()
