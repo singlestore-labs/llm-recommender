@@ -70,9 +70,9 @@ def create_dataset():
 
     df = (
         raw_df[raw_df['author'].notna()]
-        [["model", "author", "model_name_for_query", "average", "link", "still_on_hub"]]
-        .rename(columns={"model": "name", "model_name_for_query": "repo_id", "average": "score"})
-    )
+        [["model", "author", "model_name_for_query", "average", "link", "still_on_hub", 'arc', 'hellaswag', 'mmlu',
+          'truthfulqa', 'winogrande', 'gsm8k',]]
+        .rename(columns={"model": "name", "model_name_for_query": "repo_id", "average": "score"}))
 
     for i, row in df.iterrows():
         details = get_hf_model_details(row['repo_id'])
