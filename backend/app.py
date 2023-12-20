@@ -16,6 +16,15 @@ db_connection = s2.connect(DB_CONNECTION_URL)
 openai.api_key = OPENAI_API_KEY
 
 
+def load_leaderboard_df():
+    leaderboard_path = os.path.join('leaderboard/datasets/leaderboard.json')
+
+    if os.path.exists(leaderboard_path):
+        return pd.read_json(leaderboard_path, dtype={'still_on_hub': bool})
+    else:
+        print(f"The file '{leaderboard_path}' does not exists")
+
+
 def drop_table(table_name: str):
     with db_connection.cursor() as cursor:
         cursor.execute(f'DROP TABLE IF EXISTS {DB_NAME}.{table_name}')
@@ -70,30 +79,7 @@ def create_avg_embeddings(input: str):
     return np.mean(np.array(embeddings), axis=0).tolist()
 
 
-def search(query: str,  table_name: str, select='*', min_similarity=0, limit=10):
-    query_embedding = create_embeddings(query)[0]
-
-    with db_connection.cursor() as cursor:
-        cursor.execute(f'''
-          SELECT {select}, DOT_PRODUCT(JSON_ARRAY_PACK(%s), embedding) as similarity
-          FROM {table_name}
-          WHERE similarity > {min_similarity}
-          ORDER BY similarity DESC
-          LIMIT %s
-        ''', [str(query_embedding), limit])
-
-        return cursor.fetchall()
-
-
 def init_database():
-    def load_leaderboard_df():
-        leaderboard_path = os.path.join('leaderboard/datasets/leaderboard.json')
-
-        if os.path.exists(leaderboard_path):
-            return pd.read_json(leaderboard_path, dtype={'still_on_hub': bool})
-        else:
-            print(f"The file '{leaderboard_path}' does not exists")
-
     def create_tables():
         def create_models_table():
             with db_connection.cursor() as cursor:
@@ -171,6 +157,21 @@ def init_database():
     # drop_table('model_embeddings')
     create_tables()
     fill_tables()
+
+
+def search(query: str,  table_name: str, select='*', min_similarity=0, limit=10):
+    query_embedding = create_embeddings(query)[0]
+
+    with db_connection.cursor() as cursor:
+        cursor.execute(f'''
+          SELECT {select}, DOT_PRODUCT(JSON_ARRAY_PACK(%s), embedding) as similarity
+          FROM {table_name}
+          WHERE similarity > {min_similarity}
+          ORDER BY similarity DESC
+          LIMIT %s
+        ''', [str(query_embedding), limit])
+
+        return cursor.fetchall()
 
 
 init_database()
