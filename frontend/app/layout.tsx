@@ -5,7 +5,7 @@ import { Inter } from "next/font/google";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 
-const inter = Inter({ weight: ["400", "500"], subsets: ["latin"] });
+const inter = Inter({ weight: ["500", "600"], subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "SingleStore LLM Recommender",
