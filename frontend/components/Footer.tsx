@@ -6,14 +6,28 @@ export type FooterProps = ComponentProps<"footer">;
 
 export function Footer({ className, ...props }: FooterProps) {
   return (
-    <footer {...props} className={cn("flex items-center justify-center text-center py-8", className)}>
-      <p className="text-zinc-400">
+    <footer
+      {...props}
+      className={cn(
+        "flex items-center justify-center py-8 text-center",
+        className,
+      )}
+    >
+      <p className="text-muted-foreground">
         Built with 💜 with{" "}
-        <Link href="https://www.singlestore.com/" target="_blank" className="underline hover:text-zinc-800">
+        <Link
+          href="https://www.singlestore.com/"
+          target="_blank"
+          className="underline hover:text-zinc-800"
+        >
           SingleStoreDB
         </Link>{" "}
         and{" "}
-        <Link href="https://vercel.com/home" target="_blank" className="underline hover:text-zinc-800">
+        <Link
+          href="https://vercel.com/home"
+          target="_blank"
+          className="underline hover:text-zinc-800"
+        >
           Vercel
         </Link>
       </p>

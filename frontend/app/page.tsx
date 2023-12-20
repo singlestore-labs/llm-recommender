@@ -1,10 +1,9 @@
-import type { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "SingleStore LLM Recommender",
-  description: `SingleStore LLM Recommender`
-};
+import { UseCase } from "@/components/UseCase";
 
 export default function Home() {
-  return <div>Home</div>;
+  return (
+    <div className="flex flex-1 items-center justify-center">
+      <UseCase />
+    </div>
+  );
 }

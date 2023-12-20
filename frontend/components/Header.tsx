@@ -12,7 +12,7 @@ export function Header({ className, ...props }: HeaderProps) {
   return (
     <header {...props} className={cn("flex items-center py-8", className)}>
       <Link href="/" className="flex items-center justify-center">
-        <h1 className="text-2xl flex items-center justify-center gap-[0.4em]">
+        <h1 className="flex items-center justify-center gap-[0.4em] text-2xl">
           <Logo variant="1" className="w-[6em] flex-shrink-0" />
           <span className="block h-[1.3335em] w-px bg-current" />
           <span>LLM Recommender</span>

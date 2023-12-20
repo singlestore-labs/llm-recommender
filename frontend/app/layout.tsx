@@ -1,21 +1,31 @@
 import "./globals.css";
-import { Roboto } from "next/font/google";
+import { Metadata } from "next";
+import { Inter } from "next/font/google";
 
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 
-const roboto = Roboto({ weight: ["400", "500"], subsets: ["latin"] });
+const inter = Inter({ weight: ["400", "500"], subsets: ["latin"] });
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export const metadata: Metadata = {
+  title: "SingleStore LLM Recommender",
+  description: `SingleStore LLM Recommender`,
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <body
-        className={`${roboto.className} bg-white text-zinc-800
-        w-full max-w-full min-w-80 h-screen min-h-screen max-h-screen overflow-x-hidden overflow-y-auto
-        flex flex-col items-start justify-start`}
+        className={`${inter.className} flex h-screen
+        max-h-screen min-h-screen w-full min-w-80 max-w-full flex-col items-start justify-start
+        overflow-y-auto overflow-x-hidden bg-white text-zinc-800`}
       >
         <Header className="container" />
-        <main className="flex-1 container">{children}</main>
+        <main className="container flex flex-1 flex-col">{children}</main>
         <Footer className="container" />
       </body>
     </html>

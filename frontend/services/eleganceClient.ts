@@ -5,4 +5,6 @@ const appURL =
     ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
     : "http://localhost:3000";
 
-export const eleganceClient = createEleganceClient("mysql", { baseURL: `${appURL}/api` });
+export const eleganceClient = createEleganceClient("mysql", {
+  baseURL: `${appURL}/api`,
+});
