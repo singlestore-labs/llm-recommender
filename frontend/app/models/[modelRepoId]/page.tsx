@@ -1,8 +1,11 @@
+import pick from "lodash.pick";
+
 import { Model } from "@/types";
 
 import { ModelDetails } from "@/components/Model/Details";
 import { eleganceClient } from "@/services/eleganceClient";
 import { notFound } from "next/navigation";
+import { ModelResults } from "@/components/Model/Results";
 
 // http://localhost:3000/models/jondurbin%2Fairoboros-l2-70b-2.2.1
 
@@ -22,9 +25,20 @@ export default async function PageModel({
     notFound();
   }
 
+  const modelResults = pick(model, [
+    "score",
+    "arc",
+    "hellaswag",
+    "mmlu",
+    "truthfulqa",
+    "winogrande",
+    "gsm8k",
+  ]);
+
   return (
-    <div className="flex flex-1 pt-16">
+    <div className="flex flex-1 flex-col gap-12 pt-12 ">
       <ModelDetails model={model} />
+      <ModelResults results={modelResults} />
     </div>
   );
 }

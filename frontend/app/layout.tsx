@@ -25,6 +25,7 @@ export default function RootLayout({
         overflow-y-auto overflow-x-hidden bg-white text-zinc-800`}
       >
         <Header className="container" />
+        <hr className="h-px w-full" />
         <main className="container flex flex-1 flex-col">{children}</main>
         <Footer className="container" />
       </body>

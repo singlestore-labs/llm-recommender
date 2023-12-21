@@ -24,7 +24,7 @@ export function ModelDetails({
 
   return (
     <div {...props} className={cn("w-full max-w-full", className)}>
-      <header className="flex items-center justify-between">
+      <header className="flex flex-col items-center justify-between gap-6 md:flex-row">
         <Heading as="h2">
           <Link
             href={authorLink}
