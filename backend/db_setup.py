@@ -61,7 +61,7 @@ def create_avg_embeddings(input: str):
     tokens = count_tokens(input)
 
     if (tokens <= 2047):
-        return create_embedding(input)
+        return create_embedding(input)[0]
 
     chunks = string_into_chunks(input, 2047)
     embeddings = create_embedding(chunks)
