@@ -1,5 +1,7 @@
 import os
+import json
 import openai
+from typing import List, Dict
 import numpy as np
 import pandas as pd
 import singlestoredb as s2
@@ -23,6 +25,15 @@ def load_leaderboard_df():
         return pd.read_json(leaderboard_path, dtype={'still_on_hub': bool})
     else:
         print(f"The file '{leaderboard_path}' does not exists")
+
+
+def load_model_embeddings_dataset() -> List[Dict[str, str]]:
+    path = os.path.join('datasets/model_embeddings.json')
+    if os.path.exists(path):
+        with open(path, 'r') as file:
+            return json.load(file)
+    else:
+        return []
 
 
 def string_into_chunks(string: str, max_length=2048):
@@ -66,6 +77,14 @@ def create_avg_embeddings(input: str):
     chunks = string_into_chunks(input, 2047)
     embeddings = create_embedding(chunks)
     return np.mean(np.array(embeddings), axis=0).tolist()
+
+
+def get_model_embedding(model, model_embeddings: List[Dict[str, str]] = []):
+    for item in model_embeddings:
+        if item['model_repo_id'] == model['repo_id'] and item['embedding']:
+            return item['embedding']
+
+    return create_avg_embeddings(str(model))
 
 
 def get_models(select='*', query='', as_dict=True):
@@ -149,8 +168,12 @@ def fill_tables():
             has_model_embeddings = bool(cursor.fetchall()[0][0])
 
             if not has_models or not has_model_embeddings:
-                models = get_models(query='ORDER BY score DESC')[:10]
-                values = [[i['repo_id'], str(create_avg_embeddings(str(i)))] for i in models]
+                embeddings_dataset = load_model_embeddings_dataset()
+                models = get_models(query='ORDER BY score DESC')[:12]
+                values = []
+
+                for model in models:
+                    values.append([model['repo_id'], get_model_embedding(model, embeddings_dataset)])
 
                 df = pd.DataFrame(values, columns=['model_repo_id', 'embedding'])
                 df.to_json(os.path.abspath('datasets/model_embeddings.json'), orient='records')
@@ -158,7 +181,7 @@ def fill_tables():
                 cursor.executemany(f'''
                     INSERT INTO model_embeddings (model_repo_id, embedding)
                     VALUES (%s, JSON_ARRAY_PACK(%s))
-                ''', values)
+                ''', [[value[0], str(value[1])] for value in values])
 
     fill_models_table()
     fill_model_embeddings_table()

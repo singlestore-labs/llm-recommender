@@ -77,3 +77,6 @@ def search(query: str,  table_name: str, select='*', min_similarity=0, limit=10)
         ''', [str(query_embedding), limit])
 
         return cursor.fetchall()
+
+
+print(search('MindsAndCompany', 'model_embeddings', select='model_repo_id'))
