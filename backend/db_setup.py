@@ -3,6 +3,7 @@ import openai
 import numpy as np
 import pandas as pd
 import singlestoredb as s2
+import tiktoken
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -18,7 +19,6 @@ openai.api_key = OPENAI_API_KEY
 
 def load_leaderboard_df():
     leaderboard_path = os.path.join('leaderboard/datasets/leaderboard.json')
-
     if os.path.exists(leaderboard_path):
         return pd.read_json(leaderboard_path, dtype={'still_on_hub': bool})
     else:
@@ -47,14 +47,24 @@ def string_into_chunks(string: str, max_length=2048):
     return chunks
 
 
-def create_embeddings(input):
+def count_tokens(text: str):
+    enc = tiktoken.get_encoding('cl100k_base')
+    return len(enc.encode(text))
+
+
+def create_embedding(input):
     data = openai.embeddings.create(input=input, model='text-embedding-ada-002').data
     return [i.embedding for i in data]
 
 
 def create_avg_embeddings(input: str):
-    chunks = string_into_chunks(input, 2048)
-    embeddings = create_embeddings(chunks)
+    tokens = count_tokens(input)
+
+    if (tokens <= 2047):
+        return create_embedding(input)
+
+    chunks = string_into_chunks(input, 2047)
+    embeddings = create_embedding(chunks)
     return np.mean(np.array(embeddings), axis=0).tolist()
 
 
