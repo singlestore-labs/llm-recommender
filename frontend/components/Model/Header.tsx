@@ -13,14 +13,22 @@ import {
 import { Heading } from "@/components/Heading";
 import { cn } from "@/utils";
 
-export type ModelDetailsProps = ComponentProps<"div", { model: Model }>;
+export type ModelDetailsProps = ComponentProps<
+  "div",
+  Pick<Model, "repo_id" | "name" | "author" | "link" | "likes" | "downloads">
+>;
 
-export function ModelDetails({
+export function ModelHeader({
   className,
-  model,
+  repo_id,
+  name,
+  author,
+  link,
+  likes,
+  downloads,
   ...props
 }: ModelDetailsProps) {
-  const authorLink = model.link.replace(model.repo_id, model.author);
+  const authorLink = link.replace(repo_id, author);
 
   return (
     <div {...props} className={cn("w-full max-w-full", className)}>
@@ -31,15 +39,15 @@ export function ModelDetails({
             className="hover:text-muted-foreground"
             target="_blank"
           >
-            {model.author}
+            {author}
           </Link>
           /
           <Link
-            href={model.link}
+            href={link}
             className="hover:text-muted-foreground"
             target="_blank"
           >
-            {model.name}
+            {name}
           </Link>
         </Heading>
 
@@ -49,7 +57,7 @@ export function ModelDetails({
               triggerChildren={
                 <span className="flex items-center justify-start gap-[0.25em]">
                   <Heart className="w-[1.25em]" />
-                  <span>{model.likes}</span>
+                  <span>{likes}</span>
                 </span>
               }
             >
@@ -61,7 +69,7 @@ export function ModelDetails({
               triggerChildren={
                 <span className="flex items-center justify-start gap-[0.25em]">
                   <Download className="w-[1.25em]" />
-                  <span>{model.downloads}</span>
+                  <span>{downloads}</span>
                 </span>
               }
             >

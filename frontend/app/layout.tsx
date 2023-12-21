@@ -5,7 +5,7 @@ import { Inter } from "next/font/google";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 
-const inter = Inter({ weight: ["500", "600"], subsets: ["latin"] });
+const inter = Inter({ weight: ["400", "500", "600"], subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "SingleStore LLM Recommender",
@@ -27,7 +27,7 @@ export default function RootLayout({
         <Header className="container" />
         <hr className="h-px w-full" />
         <main className="container flex flex-1 flex-col">{children}</main>
-        <Footer className="container" />
+        <Footer className="container mt-8" />
       </body>
     </html>
   );
