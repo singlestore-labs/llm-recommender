@@ -19,7 +19,7 @@ const Card = React.forwardRef<
 ));
 Card.displayName = "Card";
 
-const cardHeaderVariants = cva("flex flex-col", {
+const cardHeaderVariants = cva("flex flex-col border-b", {
   variants: {
     size: {
       default: "space-y-1.5 p-6",
