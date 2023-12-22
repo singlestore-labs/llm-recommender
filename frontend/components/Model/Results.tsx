@@ -8,7 +8,12 @@ import { ExternalLink } from "@/components/ExternalLink";
 
 export type ModelResultsProps = ComponentProps<
   HTMLAttributes<HTMLDivElement>,
-  { results: TModelResults; listClassName?: string; borderClassName?: string }
+  {
+    results: TModelResults;
+    listClassName?: string;
+    borderClassName?: string;
+    withExternalLink?: boolean;
+  }
 >;
 
 const resultsMap: Record<
@@ -49,6 +54,7 @@ export function ModelResults({
   listClassName,
   borderClassName,
   results,
+  withExternalLink = false,
   ...props
 }: ModelResultsProps) {
   return (
@@ -76,7 +82,9 @@ export function ModelResults({
                   className="relative flex items-center leading-tight [font-size:inherit]"
                 >
                   {map.label}
-                  {map.link ? <ExternalLink href={map.link} /> : null}
+                  {map.link && withExternalLink ? (
+                    <ExternalLink href={map.link} />
+                  ) : null}
                 </Heading>
                 <p>{value}</p>
                 {!isLast ? (

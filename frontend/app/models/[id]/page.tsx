@@ -41,6 +41,7 @@ export default async function PageModel({
         ])}
       />
       <ModelResults
+        withExternalLink
         results={pick(model, [
           "score",
           "arc",
