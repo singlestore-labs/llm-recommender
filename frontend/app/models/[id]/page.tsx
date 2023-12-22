@@ -15,13 +15,13 @@ import { Heading } from "@/components/Heading";
 export default async function PageModel({
   params,
 }: {
-  params: { modelRepoId: string };
+  params: { id: string };
 }) {
-  const modelRepoId = decodeURIComponent(params.modelRepoId);
+  const id = decodeURIComponent(params.id);
 
   const model = await eleganceClient.requests.findOne<Model>({
     collection: "models",
-    where: `repo_id = '${modelRepoId}'`,
+    where: `id = '${id}'`,
   });
 
   if (!model || !Object.keys(model).length) {

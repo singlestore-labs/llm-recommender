@@ -1,14 +1,14 @@
 import { HTMLAttributes } from "react";
 
 import { ComponentProps, ModelResults as TModelResults } from "@/types";
+import { cn } from "@/utils";
 import { Heading } from "@/components/Heading";
 import { Card } from "@/components/ui/card";
 import { ExternalLink } from "@/components/ExternalLink";
-import { cn } from "@/utils";
 
 export type ModelResultsProps = ComponentProps<
   HTMLAttributes<HTMLDivElement>,
-  { results: TModelResults }
+  { results: TModelResults; listClassName?: string; borderClassName?: string }
 >;
 
 const resultsMap: Record<
@@ -46,25 +46,47 @@ const resultsMap: Record<
 
 export function ModelResults({
   className,
+  listClassName,
+  borderClassName,
   results,
   ...props
 }: ModelResultsProps) {
   return (
-    <Card {...props} className={cn("overflow-hidden p-4", className)}>
-      <ul className="max-lg:grid-auto-fit-[10.75rem] gap-4 max-lg:grid lg:flex">
+    <Card
+      {...props}
+      className={cn("overflow-x-auto overflow-y-hidden py-4", className)}
+    >
+      <ul
+        className={cn(
+          "flex w-full max-w-full items-stretch justify-between gap-4",
+          listClassName,
+        )}
+      >
         {(Object.entries(results) as [keyof TModelResults, number][]).map(
-          ([key, value]) => {
+          ([key, value], i, arr) => {
+            const isLast = !arr[i + 1];
             const map = resultsMap[key];
             return (
               <li
                 key={key}
-                className="group flex flex-1 flex-col items-center justify-center text-center first:border-l-0 lg:border-l"
+                className="group relative flex flex-1 flex-col items-center justify-center px-4 text-center"
               >
-                <Heading className="text-md relative flex items-center">
+                <Heading
+                  as="h6"
+                  className="relative flex items-center leading-tight [font-size:inherit]"
+                >
                   {map.label}
                   {map.link ? <ExternalLink href={map.link} /> : null}
                 </Heading>
-                <p className="text-md">{value}</p>
+                <p>{value}</p>
+                {!isLast ? (
+                  <span
+                    className={cn(
+                      "absolute -right-2 top-0 h-full w-px bg-border leading-tight",
+                      borderClassName,
+                    )}
+                  />
+                ) : null}
               </li>
             );
           },

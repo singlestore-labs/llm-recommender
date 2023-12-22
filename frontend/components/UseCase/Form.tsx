@@ -24,7 +24,17 @@ export const useCaseFormSchema = z.object({
 
 export type UseCaseFormSchema = z.infer<typeof useCaseFormSchema>;
 
-export function UseCaseForm({ className }: { className?: string }) {
+export type UseCaseFormProps = {
+  className?: string;
+  isDisabled?: boolean;
+  onSubmit?: SubmitHandler<UseCaseFormSchema>;
+};
+
+export function UseCaseForm({
+  className,
+  isDisabled,
+  onSubmit,
+}: UseCaseFormProps) {
   const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   const form = useForm<UseCaseFormSchema>({
@@ -34,7 +44,7 @@ export function UseCaseForm({ className }: { className?: string }) {
 
   const handleSubmit: SubmitHandler<UseCaseFormSchema> = (values, event) => {
     event?.preventDefault();
-    console.log(values);
+    onSubmit?.(values, event);
   };
 
   const handleTextareaKeyDown: TextareaProps["onKeyDown"] = (event) => {
@@ -44,7 +54,7 @@ export function UseCaseForm({ className }: { className?: string }) {
   };
 
   return (
-    <Card className={cn("overflow-hidden", className)}>
+    <Card className={cn("w-full overflow-hidden", className)}>
       <CardContent className="p-0">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="relative">
@@ -61,6 +71,7 @@ export function UseCaseForm({ className }: { className?: string }) {
                       onKeyDown={handleTextareaKeyDown}
                       autoFocus
                       {...field}
+                      disabled={isDisabled}
                     />
                   </FormControl>
                   <FormMessage className="px-6 pb-4 pt-2" />
@@ -71,6 +82,7 @@ export function UseCaseForm({ className }: { className?: string }) {
               ref={buttonRef}
               type="submit"
               className="group absolute bottom-4 right-4 ml-auto"
+              disabled={isDisabled}
             >
               <SendHorizontal className="w-5 transition group-active:translate-x-1" />
             </Button>

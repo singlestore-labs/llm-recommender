@@ -9,6 +9,7 @@ const headingVariants = cva("leading-none tracking-tight", {
     size: {
       default: "text-2xl font-semibold",
       md: "text-xl font-semibold",
+      sm: "text-lg font-semibold",
     },
   },
   defaultVariants: {

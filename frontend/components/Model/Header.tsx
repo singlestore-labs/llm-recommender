@@ -10,12 +10,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Heading } from "@/components/Heading";
+import { Heading, HeadingProps } from "@/components/Heading";
 import { cn } from "@/utils";
 
 export type ModelDetailsProps = ComponentProps<
   "div",
-  Pick<Model, "repo_id" | "name" | "author" | "link" | "likes" | "downloads">
+  Pick<
+    Model,
+    "repo_id" | "name" | "author" | "link" | "likes" | "downloads"
+  > & { headingProps?: HeadingProps }
 >;
 
 export function ModelHeader({
@@ -26,14 +29,20 @@ export function ModelHeader({
   link,
   likes,
   downloads,
+  headingProps,
   ...props
 }: ModelDetailsProps) {
   const authorLink = link.replace(repo_id, author);
 
+  const details = [
+    { label: "Likes", value: likes, icon: Heart },
+    { label: "Downloads", value: downloads, icon: Download },
+  ];
+
   return (
     <div {...props} className={cn("w-full max-w-full", className)}>
       <header className="flex flex-col items-center justify-between gap-6 md:flex-row">
-        <Heading as="h2">
+        <Heading as="h2" {...headingProps}>
           <Link
             href={authorLink}
             className="hover:text-muted-foreground"
@@ -51,31 +60,26 @@ export function ModelHeader({
           </Link>
         </Heading>
 
-        <ul className="flex items-center justify-start gap-6">
-          <li className="flex items-center justify-center">
-            <Details
-              triggerChildren={
-                <span className="flex items-center justify-start gap-[0.25em]">
-                  <Heart className="w-[1.25em]" />
-                  <span>{likes}</span>
-                </span>
-              }
-            >
-              Likes
-            </Details>
-          </li>
-          <li className="flex items-center justify-center">
-            <Details
-              triggerChildren={
-                <span className="flex items-center justify-start gap-[0.25em]">
-                  <Download className="w-[1.25em]" />
-                  <span>{downloads}</span>
-                </span>
-              }
-            >
-              Downloads last month
-            </Details>
-          </li>
+        <ul
+          className={cn(
+            "flex items-center justify-start gap-[1em]",
+            headingProps?.size === "sm" && "text-md",
+          )}
+        >
+          {details.map((detail) => (
+            <li key={detail.label} className="flex items-center justify-center">
+              <Details
+                triggerChildren={
+                  <span className="flex items-center justify-start gap-[0.25em]">
+                    <detail.icon className="w-[1.25em] text-[1em]" />
+                    <span>{detail.value}</span>
+                  </span>
+                }
+              >
+                {detail.label}
+              </Details>
+            </li>
+          ))}
         </ul>
       </header>
     </div>
