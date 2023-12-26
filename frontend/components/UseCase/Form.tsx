@@ -67,7 +67,7 @@ export function UseCaseForm({
                     <Textarea
                       className="resize-none rounded-none border-none bg-none py-4 pl-6 pr-[calc(theme(spacing.6)+3.25rem)] text-lg focus-visible:ring-0 focus-visible:ring-offset-0"
                       rows={4}
-                      placeholder="Which model to choose for chatbot development?"
+                      placeholder="Describe your use case"
                       onKeyDown={handleTextareaKeyDown}
                       autoFocus
                       {...field}
@@ -83,6 +83,7 @@ export function UseCaseForm({
               type="submit"
               className="group absolute bottom-4 right-4 ml-auto"
               disabled={isDisabled}
+              isLoading={isDisabled}
             >
               <SendHorizontal className="w-5 transition group-active:translate-x-1" />
             </Button>

@@ -29,6 +29,7 @@ export function UseCaseModels({
           className="mx-auto mt-6"
           disabled={isLoading}
           onClick={onRenegerateClick}
+          isLoading={isLoading}
         >
           Regenerate
         </Button>

@@ -8,6 +8,7 @@ const headingVariants = cva("leading-none tracking-tight", {
   variants: {
     size: {
       default: "text-2xl font-semibold",
+      hero: "text-4xl font-bold",
       md: "text-xl font-semibold",
       sm: "text-lg font-semibold",
     },

@@ -70,7 +70,7 @@ export function ModelCard({
             gsm8k,
           }}
         />
-        <Button asChild className="ml-auto h-auto p-0" variant="link">
+        <Button asChild className="ml-auto">
           <Link href={`/models/${encodeURIComponent(id)}`} target="_blank">
             View details
           </Link>

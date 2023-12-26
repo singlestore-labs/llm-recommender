@@ -7,6 +7,7 @@ import { eleganceClient } from "@/services/eleganceClient";
 import { Heading } from "@/components/Heading";
 import { UseCaseForm, UseCaseFormProps } from "@/components/UseCase/Form";
 import { UseCaseModels, UseCaseModelsProps } from "@/components/UseCase/Models";
+import { Dots } from "@/components/Dots";
 
 const modelColumns: Exclude<
   keyof UseCaseModelsProps["models"][number],
@@ -77,13 +78,16 @@ export default function Home() {
   }, [prompt, getModels]);
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center pt-16 transition">
-      <Heading className="w-full" as="h2">
-        Describe your use case
+    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center pt-16">
+      <Dots className="fixed" />
+
+      <Heading as="h2" size="hero" className="text-center leading-normal">
+        Find the most appropriate LLM model for your use case with the LLM
+        Recommender
       </Heading>
 
       <UseCaseForm
-        className="mb-32 mt-6"
+        className="mb-32 mt-12"
         isDisabled={isModelsLoading}
         onSubmit={handleUseCaseFormSubmit}
       />
