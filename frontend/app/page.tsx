@@ -2,32 +2,13 @@
 
 import { useCallback, useState } from "react";
 
-import { Defined, Model } from "@/types";
-import { eleganceClient } from "@/services/eleganceClient";
+import { Defined } from "@/types";
+import type { SearchModels } from "@/app/api/models/search/route";
+import { api } from "@/utils/api";
 import { Heading } from "@/components/Heading";
 import { UseCaseForm, UseCaseFormProps } from "@/components/UseCase/Form";
 import { UseCaseModels, UseCaseModelsProps } from "@/components/UseCase/Models";
 import { Dots } from "@/components/Dots";
-
-const modelColumns: Exclude<
-  keyof UseCaseModelsProps["models"][number],
-  "description"
->[] = [
-  "id",
-  "name",
-  "author",
-  "repo_id",
-  "score",
-  "arc",
-  "hellaswag",
-  "mmlu",
-  "truthfulqa",
-  "winogrande",
-  "gsm8k",
-  "link",
-  "likes",
-  "downloads",
-];
 
 export default function Home() {
   const [models, setModels] = useState<UseCaseModelsProps["models"]>([]);
@@ -37,24 +18,11 @@ export default function Home() {
   const getModels = useCallback(async (prompt: string) => {
     try {
       setIsModelsLoading(true);
-
-      const models = await eleganceClient.requests.findMany<
-        Pick<Model, (typeof modelColumns)[number]>[]
-      >({
-        collection: "models",
-        columns: modelColumns,
-        limit: 5,
+      const response = await api.post<SearchModels>(`/models/search`, {
+        body: { prompt },
       });
-
-      setModels(
-        models.map((model) => ({
-          ...model,
-          description:
-            "This model might be useful for your use case because...",
-        })),
-      );
-    } catch (error) {
-      console.error(error);
+      setModels(response.data);
+    } catch (error: any) {
       setModels([]);
     } finally {
       setIsModelsLoading(false);
@@ -82,8 +50,7 @@ export default function Home() {
       <Dots className="fixed" />
 
       <Heading as="h2" size="hero" className="text-center leading-normal">
-        Find the most appropriate LLM model for your use case with the LLM
-        Recommender
+        Find the most appropriate LLM for your use case with the LLM Recommender
       </Heading>
 
       <UseCaseForm
