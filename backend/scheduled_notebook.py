@@ -2,10 +2,14 @@ import openai
 import singlestoredb as s2
 
 from src.constants import DB_CONNECTION_URL, OPENAI_API_KEY
-from src.utils import create_embeddings
+from src.utils import create_embeddings, get_models
+from src.twitter import get_models_tweets
+
 
 db_connection = s2.connect(DB_CONNECTION_URL)
 openai.api_key = OPENAI_API_KEY
+
+models = get_models('name, author, repo_id')
 
 
 def search(query: str,  table_name: str, select='*', min_similarity=0, limit=10):
@@ -21,3 +25,7 @@ def search(query: str,  table_name: str, select='*', min_similarity=0, limit=10)
         ''', [str(query_embedding), limit])
 
         return cursor.fetchall()
+
+
+# models_tweets = get_models_tweets(models[:1])
+# print(models_tweets)
