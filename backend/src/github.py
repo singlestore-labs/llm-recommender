@@ -15,7 +15,7 @@ def search_repos(keyword: str):
         try:
             readme_file = repo.get_readme()
 
-            if readme_file.size > 5000:
+            if readme_file.size > 7000:
                 continue
 
             readme = readme_file.decoded_content.decode('utf-8')
