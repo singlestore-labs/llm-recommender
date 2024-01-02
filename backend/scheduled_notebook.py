@@ -31,5 +31,5 @@ def search(query: str,  table_name: str, select='*', min_similarity=0, limit=10)
 # models_tweets = twitter.get_models_tweets(models[:1])
 # print(models_tweets)
 
-# models_reddit_posts = reddit.get_models_posts(models[:1])
-# pprint(models_reddit_posts)
+models_reddit_posts = reddit.get_models_posts(models[:1])
+print(models_reddit_posts)

@@ -64,6 +64,30 @@ def create_tables():
                 )
             ''')
 
+    def create_twitter_posts_table():
+        with db_connection.cursor() as cursor:
+            cursor.execute(f'''
+                CREATE TABLE IF NOT EXISTS twitter_posts (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    model_repo_id VARCHAR(512),
+                    text LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+                    embedding BLOB
+                )
+            ''')
+
+    def create_reddit_posts_table():
+        with db_connection.cursor() as cursor:
+            cursor.execute(f'''
+                CREATE TABLE IF NOT EXISTS reddit_posts (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    model_repo_id VARCHAR(512),
+                    text LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+                    embedding BLOB
+                )
+            ''')
+
+    create_twitter_posts_table()
+    create_reddit_posts_table()
     create_models_table()
     create_model_embeddings_table()
 

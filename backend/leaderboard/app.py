@@ -85,5 +85,5 @@ def create_dataset():
     df.to_json(f'{DATASETS_PATH}/leaderboard.json', orient='records')
 
 
-# download_results()
+download_results()
 create_dataset()
