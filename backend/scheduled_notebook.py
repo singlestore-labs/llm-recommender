@@ -1,3 +1,4 @@
+import json
 import openai
 import singlestoredb as s2
 
@@ -5,12 +6,13 @@ from src.constants import DB_CONNECTION_URL, OPENAI_API_KEY
 from src.utils import create_embeddings, get_models
 import src.twitter as twitter
 import src.reddit as reddit
+import src.github as github
 
 
 db_connection = s2.connect(DB_CONNECTION_URL)
 openai.api_key = OPENAI_API_KEY
 
-models = get_models('name, author, repo_id')
+models = get_models('name, author, repo_id', 'ORDER BY score DESC')
 
 
 def search(query: str,  table_name: str, select='*', min_similarity=0, limit=10):
@@ -31,5 +33,9 @@ def search(query: str,  table_name: str, select='*', min_similarity=0, limit=10)
 # models_tweets = twitter.get_models_tweets(models[:1])
 # print(models_tweets)
 
-models_reddit_posts = reddit.get_models_posts(models[:1])
-print(models_reddit_posts)
+# models_reddit_posts = reddit.get_models_posts(models[:1])
+# print(models_reddit_posts)
+
+models_github_repos = github.get_models_repos(models[:20])
+with open('github.json', 'w') as file:
+    json.dump(models_github_repos, file)

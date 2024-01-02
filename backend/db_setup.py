@@ -64,10 +64,10 @@ def create_tables():
                 )
             ''')
 
-    def create_twitter_posts_table():
+    def create_models_twitter_posts_table():
         with db_connection.cursor() as cursor:
             cursor.execute(f'''
-                CREATE TABLE IF NOT EXISTS twitter_posts (
+                CREATE TABLE IF NOT EXISTS models_twitter_posts (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     model_repo_id VARCHAR(512),
                     text LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
@@ -75,10 +75,10 @@ def create_tables():
                 )
             ''')
 
-    def create_reddit_posts_table():
+    def create_models_reddit_posts_table():
         with db_connection.cursor() as cursor:
             cursor.execute(f'''
-                CREATE TABLE IF NOT EXISTS reddit_posts (
+                CREATE TABLE IF NOT EXISTS models_reddit_posts (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     model_repo_id VARCHAR(512),
                     text LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
@@ -86,10 +86,22 @@ def create_tables():
                 )
             ''')
 
-    create_twitter_posts_table()
-    create_reddit_posts_table()
+    def create_models_github_repos_table():
+        with db_connection.cursor() as cursor:
+            cursor.execute(f'''
+                CREATE TABLE IF NOT EXISTS models_github_repos (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    model_repo_id VARCHAR(512),
+                    text LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+                    embedding BLOB
+                )
+            ''')
+
     create_models_table()
     create_model_embeddings_table()
+    create_models_twitter_posts_table()
+    create_models_reddit_posts_table()
+    create_models_github_repos_table()
 
 
 def fill_tables():
@@ -137,5 +149,7 @@ def fill_tables():
 
 # drop_table('models')
 # drop_table('model_embeddings')
+# drop_table('twitter_posts')
+# drop_table('reddit_posts')
 create_tables()
 fill_tables()

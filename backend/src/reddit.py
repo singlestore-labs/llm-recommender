@@ -23,8 +23,8 @@ def search_posts(keyword: str):
                 'id': post.id,
                 'title': post.title,
                 'text': post.selftext,
-                'url': post.url,
-                'created_at_utc': post.created_utc,
+                'link': post.url,
+                'created_at': post.created_utc,
             })
 
     return posts
