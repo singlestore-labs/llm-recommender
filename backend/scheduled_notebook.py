@@ -9,7 +9,7 @@ import src.github as github
 
 openai.api_key = OPENAI_API_KEY
 
-models = get_models('name, author, repo_id', 'ORDER BY score DESC')[:5]
+models = get_models('name, author, repo_id', 'ORDER BY score DESC')[:50]
 
 
 def search(query: str,  table_name: str, select='*', min_similarity=0, limit=10):

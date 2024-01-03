@@ -136,7 +136,7 @@ def fill_tables():
 
             if not has_models or not has_model_embeddings:
                 embeddings_dataset = load_model_embeddings_dataset()
-                models = get_models(query='ORDER BY score DESC')[:5]
+                models = get_models(query='ORDER BY score DESC')[:50]
                 values = []
 
                 for model in models:
