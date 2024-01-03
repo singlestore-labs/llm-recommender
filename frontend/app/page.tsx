@@ -12,7 +12,6 @@ import { Dots } from "@/components/Dots";
 
 export default function Home() {
   const [models, setModels] = useState<UseCaseModelsProps["models"]>([]);
-  const [prompt, setPrompt] = useState("");
   const [isModelsLoading, setIsModelsLoading] = useState(false);
 
   const getModels = useCallback(async (prompt: string) => {
@@ -33,17 +32,10 @@ export default function Home() {
     Defined<UseCaseFormProps["onSubmit"]>
   >(
     (values) => {
-      setPrompt(values.prompt);
       getModels(values.prompt);
     },
     [getModels],
   );
-
-  const handleRegenerateModelsClick = useCallback<
-    Defined<UseCaseModelsProps["onRenegerateClick"]>
-  >(() => {
-    getModels(prompt);
-  }, [prompt, getModels]);
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center pt-16">
@@ -62,7 +54,6 @@ export default function Home() {
       <UseCaseModels
         models={models}
         isLoading={isModelsLoading}
-        onRenegerateClick={handleRegenerateModelsClick}
         scrollToFirst
       />
     </div>

@@ -62,7 +62,7 @@ export default async function PageModel({
           />
         </div>
 
-        <div className="order-1 w-full lg:order-2 lg:w-[calc(theme(width.1/3)-theme(spacing.4))]">
+        {/* <div className="order-1 w-full lg:order-2 lg:w-[calc(theme(width.1/3)-theme(spacing.4))]">
           <Card>
             <CardHeader size="md">
               <Heading as="h3" size="md">
@@ -71,7 +71,7 @@ export default async function PageModel({
             </CardHeader>
             <CardContent className="py-4">X posts</CardContent>
           </Card>
-        </div>
+        </div> */}
       </div>
     </div>
   );
