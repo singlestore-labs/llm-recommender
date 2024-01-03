@@ -25,6 +25,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json("prompt field is required", { status: 400 });
     }
 
+    const promptEmbedding = (
+      await eleganceServerClient.ai.createEmbedding(prompt)
+    )[0];
+
     const [models, redditPosts, githubRepos] = await Promise.all([
       eleganceServerClient.controllers.vectorSearch<
         {
@@ -36,6 +40,7 @@ export async function POST(request: NextRequest) {
         collection: "model_embeddings",
         embeddingField: "embedding",
         query: prompt,
+        queryEmbedding: promptEmbedding,
         limit: 5,
       }),
       eleganceServerClient.controllers.vectorSearch<
@@ -53,6 +58,7 @@ export async function POST(request: NextRequest) {
         collection: "models_reddit_posts",
         embeddingField: "embedding",
         query: prompt,
+        queryEmbedding: promptEmbedding,
         limit: 25,
       }),
       eleganceServerClient.controllers.vectorSearch<
@@ -71,6 +77,7 @@ export async function POST(request: NextRequest) {
         collection: "models_github_repos",
         embeddingField: "embedding",
         query: prompt,
+        queryEmbedding: promptEmbedding,
         limit: 25,
       }),
     ]);
