@@ -21,7 +21,7 @@ def search_repos(keyword: str):
             readme = readme_file.decoded_content.decode('utf-8')
 
             repos.append({
-                'id': repo.id,
+                'repo_id': repo.id,
                 'name': repo.name,
                 'link': repo.html_url,
                 'created_at': repo.created_at.timestamp(),

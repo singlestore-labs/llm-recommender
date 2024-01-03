@@ -81,7 +81,11 @@ def create_tables():
                 CREATE TABLE IF NOT EXISTS models_reddit_posts (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     model_repo_id VARCHAR(512),
+                    post_id VARCHAR(256),
+                    title VARCHAR(512),
                     text LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+                    link VARCHAR(256),
+                    created_at TIMESTAMP,
                     embedding BLOB
                 )
             ''')
@@ -92,7 +96,12 @@ def create_tables():
                 CREATE TABLE IF NOT EXISTS models_github_repos (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     model_repo_id VARCHAR(512),
-                    text LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+                    repo_id INT,
+                    name VARCHAR(512),
+                    description TEXT,
+                    readme LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+                    link VARCHAR(256),
+                    created_at TIMESTAMP,
                     embedding BLOB
                 )
             ''')
@@ -149,7 +158,8 @@ def fill_tables():
 
 # drop_table('models')
 # drop_table('model_embeddings')
-# drop_table('twitter_posts')
-# drop_table('reddit_posts')
+# drop_table('models_twitter_posts')
+# drop_table('models_reddit_posts')
+# drop_table('models_github_repos')
 create_tables()
 fill_tables()

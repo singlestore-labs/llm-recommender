@@ -23,7 +23,7 @@ def search_posts(keyword: str):
 
         if contains_keyword and not post.over_18 and len(post.selftext) <= 7000:
             posts.append({
-                'id': post.id,
+                'post_id': post.id,
                 'title': post.title,
                 'text': post.selftext,
                 'link': post.url,
