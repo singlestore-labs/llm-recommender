@@ -59,7 +59,6 @@ def create_tables():
                 CREATE TABLE IF NOT EXISTS model_embeddings (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     model_repo_id VARCHAR(512),
-                    text LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
                     embedding BLOB
                 )
             ''')
@@ -148,9 +147,9 @@ def fill_tables():
                     df.to_json(os.path.abspath('datasets/model_embeddings.json'), orient='records')
 
                 cursor.executemany(f'''
-                    INSERT INTO model_embeddings (model_repo_id, text, embedding)
-                    VALUES (%s, %s, JSON_ARRAY_PACK(%s))
-                ''', [[value[0], value[1], str(value[2])] for value in values])
+                    INSERT INTO model_embeddings (model_repo_id, embedding)
+                    VALUES (%s, JSON_ARRAY_PACK(%s))
+                ''', [[value[0], str(value[2])] for value in values])
 
     fill_models_table()
     fill_model_embeddings_table()
