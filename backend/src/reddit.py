@@ -1,8 +1,10 @@
 import re
+import json
 import praw
 
 from .constants import REDDIT_USERNAME, REDDIT_PASSWORD, REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, REDDIT_USER_AGENT
 from .db import db_connection
+from .utils import create_avg_embeddings
 
 # https://www.reddit.com/prefs/apps
 reddit = praw.Reddit(
@@ -67,10 +69,14 @@ def insert_models_posts(posts):
             if not len(posts):
                 continue
 
-            cursor.executemany(f'''
-                INSERT INTO models_reddit_posts (model_repo_id, post_id, title, text, link, created_at)
-                VALUES (%s,%s,%s,%s,%s,FROM_UNIXTIME(%s))
-            ''', [
-                (model_repo_id, post['post_id'], post['title'], post['text'], post['link'], post['created_at'])
-                for post in posts
-            ])
+            cursor.executemany(
+                f'''
+                INSERT INTO models_reddit_posts (model_repo_id, post_id, title, text, link, created_at, embedding)
+                VALUES (%s, %s, %s, %s, %s, FROM_UNIXTIME(%s), JSON_ARRAY_PACK(%s))
+            ''',
+                [(model_repo_id, post['post_id'],
+                  post['title'],
+                  post['text'],
+                  post['link'],
+                  post['created_at'],
+                  str(create_avg_embeddings(json.dumps(post)))) for post in posts])

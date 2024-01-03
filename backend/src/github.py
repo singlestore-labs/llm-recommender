@@ -1,4 +1,5 @@
 import re
+import json
 import datetime
 
 from github import Github
@@ -6,6 +7,7 @@ from github import Auth
 
 from .constants import GITHUB_ACCESS_TOKEN
 from .db import db_connection
+from .utils import create_avg_embeddings
 
 github = Github(auth=Auth.Token(GITHUB_ACCESS_TOKEN))
 
@@ -77,12 +79,13 @@ def insert_models_repos(repos):
 
             cursor.executemany(
                 f'''
-                INSERT INTO models_github_repos (model_repo_id, repo_id, name, description, readme, link, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, FROM_UNIXTIME(%s))
+                INSERT INTO models_github_repos (model_repo_id, repo_id, name, description, readme, link, created_at, embedding)
+                VALUES (%s, %s, %s, %s, %s, %s, FROM_UNIXTIME(%s), JSON_ARRAY_PACK(%s))
             ''',
                 [(model_repo_id, repo['repo_id'],
                   repo['name'],
                   repo['description'],
                   repo['readme'],
                   repo['link'],
-                  repo['created_at']) for repo in repos])
+                  repo['created_at'],
+                  str(create_avg_embeddings(json.dumps(repo)))) for repo in repos])
