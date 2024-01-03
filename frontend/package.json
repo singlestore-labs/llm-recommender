@@ -20,6 +20,7 @@
     "axios": "^1.6.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
+    "lodash.groupby": "^4.6.0",
     "lodash.omit": "^4.5.0",
     "lodash.pick": "^4.4.0",
     "lucide-react": "^0.299.0",
@@ -39,6 +40,7 @@
   },
   "devDependencies": {
     "@svgr/webpack": "^8.1.0",
+    "@types/lodash.groupby": "^4.6.9",
     "@types/lodash.omit": "^4.5.9",
     "@types/lodash.pick": "^4.4.9",
     "@types/node": "latest",
