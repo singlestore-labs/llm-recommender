@@ -4,7 +4,7 @@ import praw
 
 from .constants import REDDIT_USERNAME, REDDIT_PASSWORD, REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, REDDIT_USER_AGENT
 from .db import db_connection
-from .utils import create_avg_embeddings
+from .utils import create_avg_embeddings, clean_string
 
 # https://www.reddit.com/prefs/apps
 reddit = praw.Reddit(
@@ -79,4 +79,5 @@ def insert_models_posts(posts):
                   post['text'],
                   post['link'],
                   post['created_at'],
-                  str(create_avg_embeddings(json.dumps(post)))) for post in posts])
+                  str(create_avg_embeddings(json.dumps({**post, 'text': clean_string(post['text'])}))))
+                 for post in posts])

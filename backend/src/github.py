@@ -7,7 +7,7 @@ from github import Auth
 
 from .constants import GITHUB_ACCESS_TOKEN
 from .db import db_connection
-from .utils import create_avg_embeddings
+from .utils import create_avg_embeddings, clean_string
 
 github = Github(auth=Auth.Token(GITHUB_ACCESS_TOKEN))
 
@@ -88,4 +88,5 @@ def insert_models_repos(repos):
                   repo['readme'],
                   repo['link'],
                   repo['created_at'],
-                  str(create_avg_embeddings(json.dumps(repo)))) for repo in repos])
+                  str(create_avg_embeddings(json.dumps({**repo, 'readme': clean_string(repo['readme'])}))))
+                 for repo in repos])

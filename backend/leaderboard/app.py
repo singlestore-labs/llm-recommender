@@ -68,6 +68,12 @@ def create_dataset():
     raw_df = get_leaderboard_df(EVAL_RESULTS_PATH, EVAL_REQUESTS_PATH, COLS, BENCHMARK_COLS)
     update_collections(raw_df.copy())
 
+    # df['created_at'] = df['created_at'].apply(
+    #     lambda created_at: datetime.fromisoformat(
+    #         created_at.replace("Z", "+00:00")
+    #     ).timestamp() if created_at else time.time()
+    # )
+
     df = (
         raw_df[raw_df['author'].notna()]
         [["model", "author", "model_name_for_query", "average", "link", "still_on_hub", 'arc', 'hellaswag', 'mmlu',

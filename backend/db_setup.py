@@ -1,32 +1,32 @@
-from typing import List, Dict
 import os
 import json
 import openai
+import time
+from datetime import datetime
 import pandas as pd
-import singlestoredb as s2
 
-from src.constants import DB_CONNECTION_URL, OPENAI_API_KEY
-from src.utils import drop_table, get_models, get_model_embedding
+from src.constants import OPENAI_API_KEY
+from src.db import db_connection
+from src.utils import drop_table, create_embeddings, count_tokens, string_into_chunks, clean_string
 
-db_connection = s2.connect(DB_CONNECTION_URL)
 openai.api_key = OPENAI_API_KEY
 
 
 def load_leaderboard_df():
     leaderboard_path = os.path.join('leaderboard/datasets/leaderboard.json')
+
     if os.path.exists(leaderboard_path):
-        return pd.read_json(leaderboard_path, dtype={'still_on_hub': bool})
+        df = pd.read_json(leaderboard_path, dtype={'still_on_hub': bool})
+        df['created_at'] = df['created_at'].apply(
+            lambda created_at: datetime.fromisoformat(
+                created_at.replace("Z", "+00:00")
+            ).timestamp() if created_at else time.time()
+        )
+
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        return df.head(26)
     else:
         print(f"The file '{leaderboard_path}' does not exists")
-
-
-def load_model_embeddings_dataset() -> List[Dict[str, str]]:
-    path = os.path.join('datasets/model_embeddings.json')
-    if os.path.exists(path):
-        with open(path, 'r') as file:
-            return json.load(file)
-    else:
-        return []
 
 
 def create_tables():
@@ -49,24 +49,27 @@ def create_tables():
                     downloads INT,
                     likes INT,
                     still_on_hub BOOLEAN NOT NULL,
-                    readme LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci
-                )
-            ''')
-
-    def create_model_embeddings_table():
-        with db_connection.cursor() as cursor:
-            cursor.execute(f'''
-                CREATE TABLE IF NOT EXISTS model_embeddings (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    model_repo_id VARCHAR(512),
+                    created_at TIMESTAMP,
                     embedding BLOB
                 )
             ''')
 
-    def create_models_twitter_posts_table():
+    def create_model_readmes_table():
         with db_connection.cursor() as cursor:
             cursor.execute(f'''
-                CREATE TABLE IF NOT EXISTS models_twitter_posts (
+                CREATE TABLE IF NOT EXISTS model_readmes (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    model_repo_id VARCHAR(512),
+                    text LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+                    text_clean LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+                    embedding BLOB
+                )
+            ''')
+
+    def create_model_twitter_posts_table():
+        with db_connection.cursor() as cursor:
+            cursor.execute(f'''
+                CREATE TABLE IF NOT EXISTS model_twitter_posts (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     model_repo_id VARCHAR(512),
                     text LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
@@ -74,10 +77,10 @@ def create_tables():
                 )
             ''')
 
-    def create_models_reddit_posts_table():
+    def create_model_reddit_posts_table():
         with db_connection.cursor() as cursor:
             cursor.execute(f'''
-                CREATE TABLE IF NOT EXISTS models_reddit_posts (
+                CREATE TABLE IF NOT EXISTS model_reddit_posts (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     model_repo_id VARCHAR(512),
                     post_id VARCHAR(256),
@@ -89,10 +92,10 @@ def create_tables():
                 )
             ''')
 
-    def create_models_github_repos_table():
+    def create_model_github_repos_table():
         with db_connection.cursor() as cursor:
             cursor.execute(f'''
-                CREATE TABLE IF NOT EXISTS models_github_repos (
+                CREATE TABLE IF NOT EXISTS model_github_repos (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     model_repo_id VARCHAR(512),
                     repo_id INT,
@@ -106,13 +109,15 @@ def create_tables():
             ''')
 
     create_models_table()
-    create_model_embeddings_table()
-    create_models_twitter_posts_table()
-    create_models_reddit_posts_table()
-    create_models_github_repos_table()
+    create_model_readmes_table()
+    create_model_twitter_posts_table()
+    create_model_reddit_posts_table()
+    create_model_github_repos_table()
 
 
 def fill_tables():
+    leaderboard_df = load_leaderboard_df()
+
     with db_connection.cursor() as cursor:
         cursor.execute('SELECT COUNT(*) FROM models')
         has_models = bool(cursor.fetchall()[0][0])
@@ -120,45 +125,53 @@ def fill_tables():
     def fill_models_table():
         if not has_models:
             with db_connection.cursor() as cursor:
-                leaderboard_df = load_leaderboard_df()
-                leaderboard_df.drop('created_at', axis=1, inplace=True)
-                values = leaderboard_df.to_records(index=False).tolist()
+                df = leaderboard_df.copy()
+                df.drop('readme', axis=1, inplace=True)
+                df['embeddig'] = [str(create_embeddings(json.dumps(record))[0]) for record in df.to_dict('records')]
+                values = df.to_records(index=False).tolist()
                 cursor.executemany(f'''
-                    INSERT INTO models (name, author, repo_id, score, link, still_on_hub, arc, hellaswag, mmlu, truthfulqa, winogrande, gsm8k, readme, downloads, likes)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    INSERT INTO models (name, author, repo_id, score, link, still_on_hub, arc, hellaswag, mmlu, truthfulqa, winogrande, gsm8k, downloads, likes, created_at, embedding)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, FROM_UNIXTIME(%s), JSON_ARRAY_PACK(%s))
                 ''', values)
 
-    def fill_model_embeddings_table():
+    def fill_model_reamdes_table():
         with db_connection.cursor() as cursor:
-            cursor.execute('SELECT COUNT(*) FROM model_embeddings')
-            has_model_embeddings = bool(cursor.fetchall()[0][0])
+            cursor.execute('SELECT COUNT(*) FROM model_readmes')
+            has_model_readmes = bool(cursor.fetchall()[0][0])
 
-            if not has_models or not has_model_embeddings:
-                embeddings_dataset = load_model_embeddings_dataset()
-                models = get_models(query='ORDER BY score DESC')[:50]
-                values = []
+            if not has_models or not has_model_readmes:
+                df = leaderboard_df.copy()[['repo_id', 'readme']]
+                df = df.rename(columns={'repo_id': 'model_repo_id', 'readme': 'text'})
 
-                for model in models:
-                    embedding = get_model_embedding(model, embeddings_dataset)
-                    values.append([model['repo_id'], embedding[1], embedding[0]])
+                for index, row in df.iterrows():
+                    text = row['text']
 
-                if len(values) > len(embeddings_dataset):
-                    df = pd.DataFrame(values, columns=['model_repo_id', 'text', 'embedding'])
-                    df.to_json(os.path.abspath('datasets/model_embeddings.json'), orient='records')
+                    if count_tokens(text) <= 2047:
+                        continue
+
+                    for chunk_index, chunk in enumerate(string_into_chunks(text)):
+                        if chunk_index == 0:
+                            df.at[index, 'text'] = chunk
+                        else:
+                            df = pd.concat([df, pd.DataFrame([{**row, 'text': chunk}])], ignore_index=True)
+
+                df['text_clean'] = [clean_string(row['text']) for i, row in df.iterrows()]
+                df['embedding'] = [str(create_embeddings(row['text_clean'])[0]) for i, row in df.iterrows()]
+                values = df.to_records(index=False).tolist()
 
                 cursor.executemany(f'''
-                    INSERT INTO model_embeddings (model_repo_id, embedding)
-                    VALUES (%s, JSON_ARRAY_PACK(%s))
-                ''', [[value[0], str(value[2])] for value in values])
+                    INSERT INTO model_readmes (model_repo_id, text, text_clean, embedding)
+                    VALUES (%s, %s, %s, JSON_ARRAY_PACK(%s))
+                ''', values)
 
     fill_models_table()
-    fill_model_embeddings_table()
+    fill_model_reamdes_table()
 
 
 # drop_table('models')
-# drop_table('model_embeddings')
-# drop_table('models_twitter_posts')
-# drop_table('models_reddit_posts')
-# drop_table('models_github_repos')
+# drop_table('model_readmes')
+# drop_table('model_twitter_posts')
+# drop_table('model_reddit_posts')
+# drop_table('model_github_repos')
 create_tables()
 fill_tables()

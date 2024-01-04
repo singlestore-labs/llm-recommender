@@ -1,15 +1,14 @@
-from typing import List, Dict
 import json
 import openai
 import tiktoken
-import numpy as np
-import singlestoredb as s2
+import re
+from bs4 import BeautifulSoup
+from markdown import markdown
 from decimal import Decimal
 
+from .constants import DB_NAME, OPENAI_API_KEY
+from .db import db_connection
 
-from .constants import DB_CONNECTION_URL, DB_NAME, OPENAI_API_KEY
-
-db_connection = s2.connect(DB_CONNECTION_URL)
 openai.api_key = OPENAI_API_KEY
 
 
@@ -20,8 +19,13 @@ class DecimalEncoder(json.JSONEncoder):
         return super(DecimalEncoder, self).default(obj)
 
 
-def string_into_chunks(string: str, max_length=5000):
-    if len(string) <= max_length:
+def count_tokens(text: str):
+    enc = tiktoken.get_encoding('cl100k_base')
+    return len(enc.encode(text))
+
+
+def string_into_chunks(string: str, max_tokens=2047):
+    if count_tokens(string) <= max_tokens:
         return [string]
 
     delimiter = ' '
@@ -30,7 +34,7 @@ def string_into_chunks(string: str, max_length=5000):
     current_chunk = []
 
     for word in words:
-        if len(delimiter.join(current_chunk + [word])) <= max_length:
+        if count_tokens(delimiter.join(current_chunk + [word])) <= max_tokens:
             current_chunk.append(word)
         else:
             chunks.append(delimiter.join(current_chunk))
@@ -42,35 +46,39 @@ def string_into_chunks(string: str, max_length=5000):
     return chunks
 
 
-def count_tokens(text: str):
-    enc = tiktoken.get_encoding('cl100k_base')
-    return len(enc.encode(text))
+def clean_string(string: str):
+    def strip_html_elements(string: str):
+        html = markdown(string)
+        soup = BeautifulSoup(html, "html.parser")
+        text = soup.get_text()
+        return text.strip()
+
+    def remove_unicode_escapes(string: str):
+        return re.sub(r'[^\x00-\x7F]+', '', string)
+
+    def remove_string_spaces(strgin: str):
+        new_string = re.sub(r'\n+', '\n', strgin)
+        new_string = re.sub(r'\s+', ' ', new_string)
+        return new_string
+
+    def remove_links(string: str):
+        url_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+        return re.sub(url_pattern, '', string)
+
+    new_string = strip_html_elements(string)
+    new_string = remove_unicode_escapes(new_string)
+    new_string = remove_string_spaces(new_string)
+    new_string = re.sub(r'\*\*+', '*', new_string)
+    new_string = re.sub(r'--+', '-', new_string)
+    new_string = remove_links(new_string)
+    return new_string
 
 
 def create_embeddings(input):
     data = openai.embeddings.create(input=input, model='text-embedding-ada-002').data
+    # !!!!!!!!!!!!!!!!!!!!!
+    return [[]]
     return [i.embedding for i in data]
-
-
-def create_avg_embeddings(input: str):
-    tokens = count_tokens(input)
-
-    if (tokens <= 2047):
-        return create_embeddings(input)[0]
-
-    chunks = string_into_chunks(input)
-    embeddings = create_embeddings(chunks)
-    return np.mean(np.array(embeddings), axis=0).tolist()
-
-
-def get_model_embedding(model, model_embeddings: List[Dict[str, str]] = []):
-    for item in model_embeddings:
-        if item['model_repo_id'] == model['repo_id'] and item['embedding']:
-            return item['embedding'], item['text']
-
-    model_json = json.dumps(model, cls=DecimalEncoder)
-
-    return create_avg_embeddings(model_json), model_json
 
 
 def get_models(select='*', query='', as_dict=True):
