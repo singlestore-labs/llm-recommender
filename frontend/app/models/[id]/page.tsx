@@ -3,10 +3,10 @@ import pick from "lodash.pick";
 import { Model } from "@/types";
 
 import { ModelHeader } from "@/components/Model/Header";
-import { eleganceClient } from "@/services/eleganceClient";
 import { notFound } from "next/navigation";
 import { ModelResults } from "@/components/Model/Results";
 import { ModelReadme } from "@/components/Model/Readme";
+import { eleganceServerClient } from "@/services/eleganceServerClient";
 // import { Card, CardContent, CardHeader } from "@/components/ui/card";
 // import { Heading } from "@/components/Heading";
 
@@ -17,7 +17,7 @@ export default async function PageModel({
 }) {
   const id = decodeURIComponent(params.id);
 
-  const model = await eleganceClient.requests.findOne<Model>({
+  const model = await eleganceServerClient.controllers.findOne<Model>({
     collection: "models",
     where: `id = '${id}'`,
   });
