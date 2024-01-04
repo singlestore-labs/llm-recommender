@@ -46,7 +46,7 @@ export default function Home() {
       </Heading>
 
       <UseCaseForm
-        className="mb-32 mt-12"
+        className="mb-24 mt-12"
         isDisabled={isModelsLoading}
         onSubmit={handleUseCaseFormSubmit}
       />

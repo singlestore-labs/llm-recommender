@@ -42,13 +42,10 @@ export function ModelCard({
   ...props
 }: ModelCardProps) {
   const [isDescExpanded, setIsDescExpanded] = useState(false);
-  const shouldRenderExpandButton = description
-    ? description.length > 270
-    : false;
 
   return (
     <Card {...props} className={cn(className)}>
-      <CardHeader className="border-b-0">
+      <CardHeader className="overflow-auto border-b-0">
         <ModelHeader
           repo_id={repo_id}
           author={author}
@@ -57,6 +54,7 @@ export function ModelCard({
           likes={likes}
           downloads={downloads}
           headingProps={{ size: "sm" }}
+          className="line-clamp-3 max-md:text-center"
         />
       </CardHeader>
       <CardContent className="relative flex flex-col">
@@ -69,9 +67,9 @@ export function ModelCard({
           </p>
         ) : null}
       </CardContent>
-      <CardFooter className="gap-4">
+      <CardFooter className="gap-4 max-md:flex-col">
         <ModelResults
-          className="flex-1 py-2 text-xs"
+          className="flex-1 py-2 text-xs max-md:w-full"
           listClassName="gap-0"
           borderClassName="right-0"
           results={{
@@ -84,7 +82,7 @@ export function ModelCard({
             gsm8k,
           }}
         />
-        <Button asChild className="ml-auto">
+        <Button asChild className="ml-auto max-md:w-full">
           <Link href={`/models/${encodeURIComponent(id)}`} target="_blank">
             View details
           </Link>

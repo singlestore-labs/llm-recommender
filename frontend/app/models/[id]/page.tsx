@@ -51,7 +51,7 @@ export default async function PageModel({
         ])}
       />
       <div className="flex w-full max-w-full flex-1 flex-wrap items-start gap-8 lg:items-stretch">
-        <div className="relative order-2 w-full lg:order-1 lg:min-h-0 lg:w-[calc(theme(width.2/3)-theme(spacing.4))]">
+        <div className="relative order-2 w-full max-lg:h-full lg:order-1 lg:min-h-0 lg:w-[calc(theme(width.2/3)-theme(spacing.4))]">
           <ModelReadme
             className="absolute left-0 top-0 max-h-full w-full"
             expandedClassName="static h-auto"
