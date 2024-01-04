@@ -5,7 +5,7 @@ import time
 from datetime import datetime
 import pandas as pd
 
-from src.constants import OPENAI_API_KEY
+from src.constants import OPENAI_API_KEY, TOKENS_TRASHHOLD_LIMIT
 from src.db import db_connection
 from src.utils import drop_table, create_embeddings, count_tokens, string_into_chunks, clean_string
 
@@ -23,8 +23,8 @@ def load_leaderboard_df():
             ).timestamp() if created_at else time.time()
         )
 
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        return df.head(26)
+        # ! REMOVE .head(*)
+        return df.head(50)
     else:
         print(f"The file '{leaderboard_path}' does not exists")
 
@@ -61,7 +61,7 @@ def create_tables():
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     model_repo_id VARCHAR(512),
                     text LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
-                    text_clean LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+                    clean_text LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
                     embedding BLOB
                 )
             ''')
@@ -72,7 +72,7 @@ def create_tables():
                 CREATE TABLE IF NOT EXISTS model_twitter_posts (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     model_repo_id VARCHAR(512),
-                    text LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+                    clean_text LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
                     embedding BLOB
                 )
             ''')
@@ -85,7 +85,7 @@ def create_tables():
                     model_repo_id VARCHAR(512),
                     post_id VARCHAR(256),
                     title VARCHAR(512),
-                    text LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+                    clean_text LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
                     link VARCHAR(256),
                     created_at TIMESTAMP,
                     embedding BLOB
@@ -101,7 +101,7 @@ def create_tables():
                     repo_id INT,
                     name VARCHAR(512),
                     description TEXT,
-                    readme LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+                    clean_readme LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
                     link VARCHAR(256),
                     created_at TIMESTAMP,
                     embedding BLOB
@@ -146,7 +146,7 @@ def fill_tables():
                 for index, row in df.iterrows():
                     text = row['text']
 
-                    if count_tokens(text) <= 2047:
+                    if count_tokens(text) <= TOKENS_TRASHHOLD_LIMIT:
                         continue
 
                     for chunk_index, chunk in enumerate(string_into_chunks(text)):
@@ -155,12 +155,15 @@ def fill_tables():
                         else:
                             df = pd.concat([df, pd.DataFrame([{**row, 'text': chunk}])], ignore_index=True)
 
-                df['text_clean'] = [clean_string(row['text']) for i, row in df.iterrows()]
-                df['embedding'] = [str(create_embeddings(row['text_clean'])[0]) for i, row in df.iterrows()]
+                df['clean_text'] = [clean_string(row['text']) for i, row in df.iterrows()]
+                df['embedding'] = [str(create_embeddings(json.dumps({
+                    'model_repo_id': row['model_repo_id'],
+                    'clean_text': row['clean_text']
+                }))[0]) for i, row in df.iterrows()]
                 values = df.to_records(index=False).tolist()
 
                 cursor.executemany(f'''
-                    INSERT INTO model_readmes (model_repo_id, text, text_clean, embedding)
+                    INSERT INTO model_readmes (model_repo_id, text, clean_text, embedding)
                     VALUES (%s, %s, %s, JSON_ARRAY_PACK(%s))
                 ''', values)
 
@@ -168,10 +171,10 @@ def fill_tables():
     fill_model_reamdes_table()
 
 
-# drop_table('models')
-# drop_table('model_readmes')
-# drop_table('model_twitter_posts')
-# drop_table('model_reddit_posts')
-# drop_table('model_github_repos')
+drop_table('models')
+drop_table('model_readmes')
+drop_table('model_twitter_posts')
+drop_table('model_reddit_posts')
+drop_table('model_github_repos')
 create_tables()
 fill_tables()

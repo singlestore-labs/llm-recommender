@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from markdown import markdown
 from decimal import Decimal
 
-from .constants import DB_NAME, OPENAI_API_KEY
+from .constants import DB_NAME, OPENAI_API_KEY, TOKENS_LIMIT
 from .db import db_connection
 
 openai.api_key = OPENAI_API_KEY
@@ -24,7 +24,7 @@ def count_tokens(text: str):
     return len(enc.encode(text))
 
 
-def string_into_chunks(string: str, max_tokens=2047):
+def string_into_chunks(string: str, max_tokens=TOKENS_LIMIT):
     if count_tokens(string) <= max_tokens:
         return [string]
 

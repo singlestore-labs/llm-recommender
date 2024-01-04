@@ -5,9 +5,9 @@ import datetime
 from github import Github
 from github import Auth
 
-from .constants import GITHUB_ACCESS_TOKEN
+from .constants import GITHUB_ACCESS_TOKEN, TOKENS_TRASHHOLD_LIMIT
 from .db import db_connection
-from .utils import create_avg_embeddings, clean_string
+from .utils import clean_string, count_tokens, create_embeddings, string_into_chunks
 
 github = Github(auth=Auth.Token(GITHUB_ACCESS_TOKEN))
 
@@ -51,7 +51,7 @@ def get_models_repos(models):
 
             with db_connection.cursor() as cursor:
                 cursor.execute(f"""
-                    SELECT UNIX_TIMESTAMP(created_at) FROM models_github_repos
+                    SELECT UNIX_TIMESTAMP(created_at) FROM model_github_repos
                     WHERE model_repo_id = '{repo_id}'
                     ORDER BY created_at DESC
                     LIMIT 1
@@ -77,16 +77,38 @@ def insert_models_repos(repos):
             if not len(repos):
                 continue
 
-            cursor.executemany(
-                f'''
-                INSERT INTO models_github_repos (model_repo_id, repo_id, name, description, readme, link, created_at, embedding)
+            values = []
+
+            for repo in repos:
+                value = {
+                    'model_repo_id': model_repo_id,
+                    'repo_id': repo['repo_id'],
+                    'name': repo['name'],
+                    'description': repo['description'],
+                    'clean_readme': clean_string(repo['readme']),
+                    'link': repo['link'],
+                    'created_at': repo['created_at'],
+                }
+
+                if count_tokens(value['clean_readme']) <= TOKENS_TRASHHOLD_LIMIT:
+                    embedding = str(create_embeddings(json.dumps({
+                        'model_repo_id': model_repo_id,
+                        'name': value['name'],
+                        'description': value['description'],
+                        'clean_readme': value['clean_readme']
+                    }))[0])
+                    values.append({**value, 'embedding': embedding})
+                else:
+                    for chunk in string_into_chunks(value['clean_readme']):
+                        embedding = str(create_embeddings(json.dumps({
+                            'model_repo_id': model_repo_id,
+                            'name': value['name'],
+                            'description': value['description'],
+                            'clean_readme': chunk
+                        }))[0])
+                        values.append({**value, 'clean_readme': chunk, 'embedding': embedding})
+
+            cursor.executemany(f'''
+                INSERT INTO model_github_repos (model_repo_id, repo_id, name, description, clean_readme, link, created_at, embedding)
                 VALUES (%s, %s, %s, %s, %s, %s, FROM_UNIXTIME(%s), JSON_ARRAY_PACK(%s))
-            ''',
-                [(model_repo_id, repo['repo_id'],
-                  repo['name'],
-                  repo['description'],
-                  repo['readme'],
-                  repo['link'],
-                  repo['created_at'],
-                  str(create_avg_embeddings(json.dumps({**repo, 'readme': clean_string(repo['readme'])}))))
-                 for repo in repos])
+            ''', [list(value.values()) for value in values])
