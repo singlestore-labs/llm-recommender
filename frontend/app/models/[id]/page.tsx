@@ -7,10 +7,8 @@ import { eleganceClient } from "@/services/eleganceClient";
 import { notFound } from "next/navigation";
 import { ModelResults } from "@/components/Model/Results";
 import { ModelReadme } from "@/components/Model/Readme";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Heading } from "@/components/Heading";
-
-// http://localhost:3000/models/jondurbin%2Fairoboros-l2-70b-2.2.1
+// import { Card, CardContent, CardHeader } from "@/components/ui/card";
+// import { Heading } from "@/components/Heading";
 
 export default async function PageModel({
   params,
