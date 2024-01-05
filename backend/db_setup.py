@@ -104,7 +104,7 @@ def create_tables():
                     repo_id INT,
                     name VARCHAR(512),
                     description TEXT,
-                    clean_readme LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+                    clean_text LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
                     link VARCHAR(256),
                     created_at TIMESTAMP,
                     embedding BLOB
@@ -181,7 +181,7 @@ def fill_tables():
 
 
 # drop_table('models')
-drop_table('model_readmes')
+# drop_table('model_readmes')
 # drop_table('model_twitter_posts')
 # drop_table('model_reddit_posts')
 # drop_table('model_github_repos')

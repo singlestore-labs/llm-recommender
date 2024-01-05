@@ -85,7 +85,7 @@ def insert_models_repos(repos):
                     'repo_id': repo['repo_id'],
                     'name': repo['name'],
                     'description': repo['description'],
-                    'clean_readme': clean_string(repo['readme']),
+                    'clean_text': clean_string(repo['readme']),
                     'link': repo['link'],
                     'created_at': repo['created_at'],
                 }
@@ -94,21 +94,21 @@ def insert_models_repos(repos):
                     'model_repo_id': model_repo_id,
                     'name': value['name'],
                     'description': value['description'],
-                    'clean_readme': value['clean_readme']
+                    'clean_text': value['clean_text']
                 }
 
-                if count_tokens(value['clean_readme']) <= TOKENS_TRASHHOLD_LIMIT:
+                if count_tokens(value['clean_text']) <= TOKENS_TRASHHOLD_LIMIT:
                     embedding = str(create_embeddings(json.dumps(to_embedding))[0])
                     values.append({**value, 'embedding': embedding})
                 else:
-                    for chunk in string_into_chunks(value['clean_readme']):
+                    for chunk in string_into_chunks(value['clean_text']):
                         embedding = str(create_embeddings(json.dumps({
                             **to_embedding,
-                            'clean_readme': chunk
+                            'clean_text': chunk
                         }))[0])
-                        values.append({**value, 'clean_readme': chunk, 'embedding': embedding})
+                        values.append({**value, 'clean_text': chunk, 'embedding': embedding})
 
             cursor.executemany(f'''
-                INSERT INTO model_github_repos (model_repo_id, repo_id, name, description, clean_readme, link, created_at, embedding)
+                INSERT INTO model_github_repos (model_repo_id, repo_id, name, description, clean_text, link, created_at, embedding)
                 VALUES (%s, %s, %s, %s, %s, %s, FROM_UNIXTIME(%s), JSON_ARRAY_PACK(%s))
             ''', [list(value.values()) for value in values])
