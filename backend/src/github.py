@@ -103,14 +103,14 @@ def insert_models_repos(repos):
                 }
 
                 if ai.count_tokens(value['clean_text']) <= constants.TOKENS_TRASHHOLD_LIMIT:
-                    embedding = str(ai.create_embeddings(json.dumps(to_embedding))[0])
+                    embedding = str(ai.create_embedding(json.dumps(to_embedding)))
                     values.append({**value, 'embedding': embedding})
                 else:
                     for chunk in utils.string_into_chunks(value['clean_text']):
-                        embedding = str(ai.create_embeddings(json.dumps({
+                        embedding = str(ai.create_embedding(json.dumps({
                             **to_embedding,
                             'clean_text': chunk
-                        }))[0])
+                        })))
                         values.append({**value, 'clean_text': chunk, 'embedding': embedding})
 
             cursor.executemany(f'''

@@ -11,6 +11,6 @@ def count_tokens(text: str):
     return len(enc.encode(text))
 
 
-def create_embeddings(input):
+def create_embedding(input):
     data = openai.embeddings.create(input=input, model='text-embedding-ada-002').data
-    return [i.embedding for i in data]
+    return data[0].embedding

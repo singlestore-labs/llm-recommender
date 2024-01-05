@@ -45,7 +45,7 @@ def insert_models(models):
         model['created_at'] = model['created_at'].timestamp()
         _model = {key: value for key, value in model.items() if key != 'readme'}
         to_embedding = json.dumps(_model, cls=utils.JSONEncoder)
-        embedding = str(ai.create_embeddings(to_embedding)[0])
+        embedding = str(ai.create_embedding(to_embedding))
         _models.append({**_model, embedding: embedding})
 
         if not model['readme']:
@@ -63,7 +63,7 @@ def insert_models(models):
                 'model_repo_id': readme['model_repo_id'],
                 'clean_text': readme['clean_text'],
             })
-            readme['embedding'] = str(ai.create_embeddings(to_embedding)[0])
+            readme['embedding'] = str(ai.create_embedding(to_embedding))
             readmes.append(readme)
         else:
             for i, chunk in enumerate(utils.string_into_chunks(readme['text'])):
@@ -78,7 +78,7 @@ def insert_models(models):
                     'model_repo_id': _readme['model_repo_id'],
                     'clean_text': chunk,
                 })
-                _readme['embedding'] = str(ai.create_embeddings(to_embedding)[0])
+                _readme['embedding'] = str(ai.create_embedding(to_embedding))
                 readmes.append(_readme)
 
     with db.connection.cursor() as cursor:
