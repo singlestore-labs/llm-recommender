@@ -2,6 +2,8 @@ import os
 import requests
 from huggingface_hub import snapshot_download
 from dotenv import load_dotenv
+from datetime import datetime
+from time import time
 
 from src.display.utils import (
     BENCHMARK_COLS,
@@ -80,7 +82,9 @@ def create_dataset():
         df.at[i, 'readme'] = readme
         df.at[i, 'downloads'] = details['downloads']
         df.at[i, 'likes'] = details['likes']
-        df.at[i, 'created_at'] = details['created_at']
+        df.at[i, 'created_at'] = datetime.fromisoformat(
+            details['created_at'].replace("Z", "+00:00")
+        ).timestamp() if details['created_at'] else time()
 
     df.to_json(f'{DATASETS_PATH}/leaderboard.json', orient='records')
 
