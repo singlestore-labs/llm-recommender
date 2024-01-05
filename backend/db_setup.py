@@ -4,16 +4,16 @@ from time import time
 import pandas as pd
 
 from src.constants import OPENAI_API_KEY, TOKENS_TRASHHOLD_LIMIT
-from src.db import db_connection
-from src.utils import drop_table, create_embeddings, count_tokens, string_into_chunks, clean_string
-from src.leaderboard import load_leaderboard_df
+import src.db as db
+from src.utils import create_embeddings, count_tokens, string_into_chunks, clean_string
+from src.leaderboard import get_leaderboard_df
 
 openai.api_key = OPENAI_API_KEY
 
 
 def create_tables():
     def create_models_table():
-        with db_connection.cursor() as cursor:
+        with db.connection.cursor() as cursor:
             cursor.execute(f'''
                 CREATE TABLE IF NOT EXISTS models (
                     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -37,7 +37,7 @@ def create_tables():
             ''')
 
     def create_model_readmes_table():
-        with db_connection.cursor() as cursor:
+        with db.connection.cursor() as cursor:
             cursor.execute(f'''
                 CREATE TABLE IF NOT EXISTS model_readmes (
                     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -50,7 +50,7 @@ def create_tables():
             ''')
 
     def create_model_twitter_posts_table():
-        with db_connection.cursor() as cursor:
+        with db.connection.cursor() as cursor:
             cursor.execute(f'''
                 CREATE TABLE IF NOT EXISTS model_twitter_posts (
                     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -62,7 +62,7 @@ def create_tables():
             ''')
 
     def create_model_reddit_posts_table():
-        with db_connection.cursor() as cursor:
+        with db.connection.cursor() as cursor:
             cursor.execute(f'''
                 CREATE TABLE IF NOT EXISTS model_reddit_posts (
                     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -77,7 +77,7 @@ def create_tables():
             ''')
 
     def create_model_github_repos_table():
-        with db_connection.cursor() as cursor:
+        with db.connection.cursor() as cursor:
             cursor.execute(f'''
                 CREATE TABLE IF NOT EXISTS model_github_repos (
                     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -100,15 +100,15 @@ def create_tables():
 
 
 def fill_tables():
-    leaderboard_df = load_leaderboard_df()
+    leaderboard_df = get_leaderboard_df()
 
-    with db_connection.cursor() as cursor:
+    with db.connection.cursor() as cursor:
         cursor.execute('SELECT COUNT(*) FROM models')
         has_models = bool(cursor.fetchall()[0][0])
 
     def fill_models_table():
         if not has_models:
-            with db_connection.cursor() as cursor:
+            with db.connection.cursor() as cursor:
                 df = leaderboard_df.copy()
                 df.drop('readme', axis=1, inplace=True)
                 df['embeddig'] = [str(create_embeddings(json.dumps(record))[0]) for record in df.to_dict('records')]
@@ -119,7 +119,7 @@ def fill_tables():
                 ''', values)
 
     def fill_model_reamdes_table():
-        with db_connection.cursor() as cursor:
+        with db.connection.cursor() as cursor:
             cursor.execute('SELECT COUNT(*) FROM model_readmes')
             has_model_readmes = bool(cursor.fetchall()[0][0])
 
@@ -161,10 +161,10 @@ def fill_tables():
     fill_model_reamdes_table()
 
 
-# drop_table('models')
-# drop_table('model_readmes')
-# drop_table('model_twitter_posts')
-# drop_table('model_reddit_posts')
-# drop_table('model_github_repos')
+# db.drop_table('models')
+# db.drop_table('model_readmes')
+# db.drop_table('model_twitter_posts')
+# db.drop_table('model_reddit_posts')
+# db.drop_table('model_github_repos')
 create_tables()
 fill_tables()

@@ -3,13 +3,10 @@ import openai
 import re
 import tiktoken
 from bs4 import BeautifulSoup
-from datetime import datetime
 from decimal import Decimal
 from markdown import markdown
 
-
-from .constants import DB_NAME, OPENAI_API_KEY, TOKENS_LIMIT
-from .db import db_connection
+from .constants import OPENAI_API_KEY, TOKENS_LIMIT
 
 openai.api_key = OPENAI_API_KEY
 
@@ -79,24 +76,3 @@ def clean_string(string: str):
 def create_embeddings(input):
     data = openai.embeddings.create(input=input, model='text-embedding-ada-002').data
     return [i.embedding for i in data]
-
-
-def get_models(select='*', query='', as_dict=True):
-    with db_connection.cursor() as cursor:
-        _query = f'SELECT {select} FROM models'
-
-        if query:
-            _query += f' {query}'
-
-        cursor.execute(_query)
-
-        if as_dict:
-            columns = [desc[0] for desc in cursor.description]
-            return [dict(zip(columns, row)) for row in cursor.fetchall()]
-
-        return cursor.fetchall()
-
-
-def drop_table(table_name: str):
-    with db_connection.cursor() as cursor:
-        cursor.execute(f'DROP TABLE IF EXISTS {DB_NAME}.{table_name}')

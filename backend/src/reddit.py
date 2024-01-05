@@ -2,8 +2,9 @@ import re
 import json
 import praw
 
+
+from . import db
 from .constants import REDDIT_USERNAME, REDDIT_PASSWORD, REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, REDDIT_USER_AGENT, TOKENS_TRASHHOLD_LIMIT
-from .db import db_connection
 from .utils import clean_string, count_tokens, create_embeddings, string_into_chunks
 
 # https://www.reddit.com/prefs/apps
@@ -45,7 +46,7 @@ def get_models_posts(models):
     for model in models:
         repo_id = model['repo_id']
 
-        with db_connection.cursor() as cursor:
+        with db.connection.cursor() as cursor:
             cursor.execute(f"""
                 SELECT UNIX_TIMESTAMP(created_at) FROM model_reddit_posts
                 WHERE model_repo_id = '{repo_id}'
@@ -64,7 +65,7 @@ def get_models_posts(models):
 
 
 def insert_models_posts(posts):
-    with db_connection.cursor() as cursor:
+    with db.connection.cursor() as cursor:
         for model_repo_id, posts in posts.items():
             if not len(posts):
                 continue

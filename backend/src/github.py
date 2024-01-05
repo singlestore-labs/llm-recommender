@@ -2,11 +2,12 @@ import re
 import json
 import datetime
 
+
 from github import Github
 from github import Auth
 
+from . import db
 from .constants import GITHUB_ACCESS_TOKEN, TOKENS_TRASHHOLD_LIMIT
-from .db import db_connection
 from .utils import clean_string, count_tokens, create_embeddings, string_into_chunks
 
 github = Github(auth=Auth.Token(GITHUB_ACCESS_TOKEN))
@@ -49,7 +50,7 @@ def get_models_repos(models):
         try:
             repo_id = model['repo_id']
 
-            with db_connection.cursor() as cursor:
+            with db.connection.cursor() as cursor:
                 cursor.execute(f"""
                     SELECT UNIX_TIMESTAMP(created_at) FROM model_github_repos
                     WHERE model_repo_id = '{repo_id}'
@@ -72,7 +73,7 @@ def get_models_repos(models):
 
 
 def insert_models_repos(repos):
-    with db_connection.cursor() as cursor:
+    with db.connection.cursor() as cursor:
         for model_repo_id, repos in repos.items():
             if not len(repos):
                 continue

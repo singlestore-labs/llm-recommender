@@ -5,7 +5,7 @@ from datetime import datetime
 from time import time
 
 
-def load_leaderboard_df():
+def get_leaderboard_df():
     leaderboard_path = os.path.join('leaderboard/datasets/leaderboard.json')
 
     if os.path.exists(leaderboard_path):
@@ -17,6 +17,16 @@ def load_leaderboard_df():
         )
 
         # ! REMOVE .head(*)
-        return df.head(250)
+        return df.head(10)
     else:
         print(f"The file '{leaderboard_path}' does not exists")
+
+
+def get_models():
+    existed_models = get_models
+    leaderboard_df = get_leaderboard_df()
+    return []
+
+
+def insert_models(models):
+    return []
