@@ -1,9 +1,10 @@
 import os
 import json
 import openai
-import time
+from time import time
 from datetime import datetime
 import pandas as pd
+from pprint import pprint
 
 from src.constants import OPENAI_API_KEY, TOKENS_TRASHHOLD_LIMIT
 from src.db import db_connection
@@ -20,7 +21,7 @@ def load_leaderboard_df():
         df['created_at'] = df['created_at'].apply(
             lambda created_at: datetime.fromisoformat(
                 created_at.replace("Z", "+00:00")
-            ).timestamp() if created_at else time.time()
+            ).timestamp() if created_at else time()
         )
 
         # ! REMOVE .head(*)
@@ -62,6 +63,7 @@ def create_tables():
                     model_repo_id VARCHAR(512),
                     text LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
                     clean_text LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+                    created_at TIMESTAMP,
                     embedding BLOB
                 )
             ''')
@@ -73,6 +75,7 @@ def create_tables():
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     model_repo_id VARCHAR(512),
                     clean_text LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+                    created_at TIMESTAMP,
                     embedding BLOB
                 )
             ''')
@@ -141,6 +144,8 @@ def fill_tables():
 
             if not has_models or not has_model_readmes:
                 df = leaderboard_df.copy()[['repo_id', 'readme']]
+                curr_time = time()
+                df['created_at'] = [curr_time] * len(df)
                 df = df.rename(columns={'repo_id': 'model_repo_id', 'readme': 'text'})
 
                 for index, row in df.iterrows():
@@ -152,8 +157,12 @@ def fill_tables():
                     for chunk_index, chunk in enumerate(string_into_chunks(text)):
                         if chunk_index == 0:
                             df.at[index, 'text'] = chunk
+                            df.at[index, 'created_at'] = time()
                         else:
-                            df = pd.concat([df, pd.DataFrame([{**row, 'text': chunk}])], ignore_index=True)
+                            df = pd.concat(
+                                [df, pd.DataFrame([{**row, 'text': chunk, 'created_at': time()}])],
+                                ignore_index=True
+                            )
 
                 df['clean_text'] = [clean_string(row['text']) for i, row in df.iterrows()]
                 df['embedding'] = [str(create_embeddings(json.dumps({
@@ -163,8 +172,8 @@ def fill_tables():
                 values = df.to_records(index=False).tolist()
 
                 cursor.executemany(f'''
-                    INSERT INTO model_readmes (model_repo_id, text, clean_text, embedding)
-                    VALUES (%s, %s, %s, JSON_ARRAY_PACK(%s))
+                    INSERT INTO model_readmes (model_repo_id, text, created_at, clean_text, embedding)
+                    VALUES (%s, %s, FROM_UNIXTIME(%s), %s, JSON_ARRAY_PACK(%s))
                 ''', values)
 
     fill_models_table()
@@ -172,7 +181,7 @@ def fill_tables():
 
 
 # drop_table('models')
-# drop_table('model_readmes')
+drop_table('model_readmes')
 # drop_table('model_twitter_posts')
 # drop_table('model_reddit_posts')
 # drop_table('model_github_repos')
