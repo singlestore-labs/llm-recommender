@@ -24,7 +24,7 @@ def load_leaderboard_df():
         )
 
         # ! REMOVE .head(*)
-        return df.head(50)
+        return df.head(25)
     else:
         print(f"The file '{leaderboard_path}' does not exists")
 
@@ -171,10 +171,10 @@ def fill_tables():
     fill_model_reamdes_table()
 
 
-drop_table('models')
-drop_table('model_readmes')
-drop_table('model_twitter_posts')
-drop_table('model_reddit_posts')
-drop_table('model_github_repos')
+# drop_table('models')
+# drop_table('model_readmes')
+# drop_table('model_twitter_posts')
+# drop_table('model_reddit_posts')
+# drop_table('model_github_repos')
 create_tables()
 fill_tables()

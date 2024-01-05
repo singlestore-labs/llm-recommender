@@ -76,8 +76,6 @@ def clean_string(string: str):
 
 def create_embeddings(input):
     data = openai.embeddings.create(input=input, model='text-embedding-ada-002').data
-    # !!!!!!!!!!!!!!!!!!!!!
-    return [[]]
     return [i.embedding for i in data]
 
 
