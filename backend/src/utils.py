@@ -1,10 +1,12 @@
 import json
 import openai
-import tiktoken
 import re
+import tiktoken
 from bs4 import BeautifulSoup
-from markdown import markdown
+from datetime import datetime
 from decimal import Decimal
+from markdown import markdown
+
 
 from .constants import DB_NAME, OPENAI_API_KEY, TOKENS_LIMIT
 from .db import db_connection

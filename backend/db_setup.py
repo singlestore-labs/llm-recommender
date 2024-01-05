@@ -1,32 +1,14 @@
-import os
 import json
 import openai
 from time import time
-from datetime import datetime
 import pandas as pd
 
 from src.constants import OPENAI_API_KEY, TOKENS_TRASHHOLD_LIMIT
 from src.db import db_connection
 from src.utils import drop_table, create_embeddings, count_tokens, string_into_chunks, clean_string
+from src.leaderboard import load_leaderboard_df
 
 openai.api_key = OPENAI_API_KEY
-
-
-def load_leaderboard_df():
-    leaderboard_path = os.path.join('leaderboard/datasets/leaderboard.json')
-
-    if os.path.exists(leaderboard_path):
-        df = pd.read_json(leaderboard_path, dtype={'still_on_hub': bool})
-        df['created_at'] = df['created_at'].apply(
-            lambda created_at: datetime.fromisoformat(
-                created_at.replace("Z", "+00:00")
-            ).timestamp() if created_at else time()
-        )
-
-        # ! REMOVE .head(*)
-        return df.head(250)
-    else:
-        print(f"The file '{leaderboard_path}' does not exists")
 
 
 def create_tables():
