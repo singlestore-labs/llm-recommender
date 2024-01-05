@@ -4,7 +4,6 @@ import openai
 from time import time
 from datetime import datetime
 import pandas as pd
-from pprint import pprint
 
 from src.constants import OPENAI_API_KEY, TOKENS_TRASHHOLD_LIMIT
 from src.db import db_connection
@@ -25,7 +24,7 @@ def load_leaderboard_df():
         )
 
         # ! REMOVE .head(*)
-        return df.head(25)
+        return df.head(250)
     else:
         print(f"The file '{leaderboard_path}' does not exists")
 
@@ -87,7 +86,7 @@ def create_tables():
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     model_repo_id VARCHAR(512),
                     post_id VARCHAR(256),
-                    title VARCHAR(512),
+                    title VARCHAR(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
                     clean_text LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
                     link VARCHAR(256),
                     created_at TIMESTAMP,
@@ -102,8 +101,8 @@ def create_tables():
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     model_repo_id VARCHAR(512),
                     repo_id INT,
-                    name VARCHAR(512),
-                    description TEXT,
+                    name VARCHAR(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+                    description TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
                     clean_text LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
                     link VARCHAR(256),
                     created_at TIMESTAMP,
@@ -113,7 +112,7 @@ def create_tables():
 
     create_models_table()
     create_model_readmes_table()
-    create_model_twitter_posts_table()
+    # create_model_twitter_posts_table()
     create_model_reddit_posts_table()
     create_model_github_repos_table()
 

@@ -17,7 +17,7 @@ def search_repos(keyword: str, last_repo_created_at):
     query = f'"{keyword}" in:name,description,readme'
 
     if last_repo_created_at:
-        query += f' created>:{last_repo_created_at}'
+        query += f' created:>{last_repo_created_at}'
 
     for repo in github.search_repositories(query):
         try:
