@@ -6,7 +6,7 @@ import pandas as pd
 from src.constants import OPENAI_API_KEY, TOKENS_TRASHHOLD_LIMIT
 import src.db as db
 from src.utils import create_embeddings, count_tokens, string_into_chunks, clean_string
-from src.leaderboard import get_leaderboard_df
+from src.leaderboard import get_df
 
 openai.api_key = OPENAI_API_KEY
 
@@ -100,7 +100,7 @@ def create_tables():
 
 
 def fill_tables():
-    leaderboard_df = get_leaderboard_df()
+    leaderboard_df = get_df()
 
     with db.connection.cursor() as cursor:
         cursor.execute('SELECT COUNT(*) FROM models')

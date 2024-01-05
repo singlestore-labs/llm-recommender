@@ -2,15 +2,15 @@ import re
 import json
 import datetime
 
-
 from github import Github
 from github import Auth
 
+from . import constants
 from . import db
-from .constants import GITHUB_ACCESS_TOKEN, TOKENS_TRASHHOLD_LIMIT
-from .utils import clean_string, count_tokens, create_embeddings, string_into_chunks
+from . import ai
+from . import utils
 
-github = Github(auth=Auth.Token(GITHUB_ACCESS_TOKEN))
+github = Github(auth=Auth.Token(constants.GITHUB_ACCESS_TOKEN))
 
 
 def search_repos(keyword: str, last_repo_created_at):
@@ -52,7 +52,7 @@ def get_models_repos(models):
 
             with db.connection.cursor() as cursor:
                 cursor.execute(f"""
-                    SELECT UNIX_TIMESTAMP(created_at) FROM model_github_repos
+                    SELECT UNIX_TIMESTAMP(created_at) FROM {constants.MODEL_GITHUB_REPOS_TABLE_NAME}
                     WHERE model_repo_id = '{repo_id}'
                     ORDER BY created_at DESC
                     LIMIT 1
@@ -86,7 +86,7 @@ def insert_models_repos(repos):
                     'repo_id': repo['repo_id'],
                     'name': repo['name'],
                     'description': repo['description'],
-                    'clean_text': clean_string(repo['readme']),
+                    'clean_text': utils.clean_string(repo['readme']),
                     'link': repo['link'],
                     'created_at': repo['created_at'],
                 }
@@ -98,18 +98,18 @@ def insert_models_repos(repos):
                     'clean_text': value['clean_text']
                 }
 
-                if count_tokens(value['clean_text']) <= TOKENS_TRASHHOLD_LIMIT:
-                    embedding = str(create_embeddings(json.dumps(to_embedding))[0])
+                if ai.count_tokens(value['clean_text']) <= constants.TOKENS_TRASHHOLD_LIMIT:
+                    embedding = str(ai.create_embeddings(json.dumps(to_embedding))[0])
                     values.append({**value, 'embedding': embedding})
                 else:
-                    for chunk in string_into_chunks(value['clean_text']):
-                        embedding = str(create_embeddings(json.dumps({
+                    for chunk in utils.string_into_chunks(value['clean_text']):
+                        embedding = str(ai.create_embeddings(json.dumps({
                             **to_embedding,
                             'clean_text': chunk
                         }))[0])
                         values.append({**value, 'clean_text': chunk, 'embedding': embedding})
 
             cursor.executemany(f'''
-                INSERT INTO model_github_repos (model_repo_id, repo_id, name, description, clean_text, link, created_at, embedding)
+                INSERT INTO {constants.MODEL_GITHUB_REPOS_TABLE_NAME} (model_repo_id, repo_id, name, description, clean_text, link, created_at, embedding)
                 VALUES (%s, %s, %s, %s, %s, %s, FROM_UNIXTIME(%s), JSON_ARRAY_PACK(%s))
             ''', [list(value.values()) for value in values])

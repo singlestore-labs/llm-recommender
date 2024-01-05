@@ -1,21 +1,17 @@
-
 import os
 import pandas as pd
-from datetime import datetime
-from time import time
+
+from . import constants
+from . import db
+from . import ai
+from . import utils
 
 
-def get_leaderboard_df():
+def get_df():
     leaderboard_path = os.path.join('leaderboard/datasets/leaderboard.json')
 
     if os.path.exists(leaderboard_path):
         df = pd.read_json(leaderboard_path, dtype={'still_on_hub': bool})
-        df['created_at'] = df['created_at'].apply(
-            lambda created_at: datetime.fromisoformat(
-                created_at.replace("Z", "+00:00")
-            ).timestamp() if created_at else time()
-        )
-
         # ! REMOVE .head(*)
         return df.head(10)
     else:
@@ -23,8 +19,12 @@ def get_leaderboard_df():
 
 
 def get_models():
-    existed_models = get_models
-    leaderboard_df = get_leaderboard_df()
+    existed_models_repo_ids = [record[0][0] for record in db.get_models('repo_id', as_dict=False)]
+    leaderboard_df = get_df()
+
+    for index, row in leaderboard_df.iterrows():
+        print(index, row)
+
     return []
 
 

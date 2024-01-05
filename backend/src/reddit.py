@@ -2,18 +2,18 @@ import re
 import json
 import praw
 
-
+from . import constants
 from . import db
-from .constants import REDDIT_USERNAME, REDDIT_PASSWORD, REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, REDDIT_USER_AGENT, TOKENS_TRASHHOLD_LIMIT
-from .utils import clean_string, count_tokens, create_embeddings, string_into_chunks
+from . import ai
+from . import utils
 
 # https://www.reddit.com/prefs/apps
 reddit = praw.Reddit(
-    username=REDDIT_USERNAME,
-    password=REDDIT_PASSWORD,
-    client_id=REDDIT_CLIENT_ID,
-    client_secret=REDDIT_CLIENT_SECRET,
-    user_agent=REDDIT_USER_AGENT
+    username=constants.REDDIT_USERNAME,
+    password=constants.REDDIT_PASSWORD,
+    client_id=constants.REDDIT_CLIENT_ID,
+    client_secret=constants.REDDIT_CLIENT_SECRET,
+    user_agent=constants.REDDIT_USER_AGENT
 )
 
 
@@ -48,7 +48,7 @@ def get_models_posts(models):
 
         with db.connection.cursor() as cursor:
             cursor.execute(f"""
-                SELECT UNIX_TIMESTAMP(created_at) FROM model_reddit_posts
+                SELECT UNIX_TIMESTAMP(created_at) FROM {constants.MODEL_REDDIT_POSTS_TABLE_NAME}
                 WHERE model_repo_id = '{repo_id}'
                 ORDER BY created_at DESC
                 LIMIT 1
@@ -77,7 +77,7 @@ def insert_models_posts(posts):
                     'model_repo_id': model_repo_id,
                     'post_id': post['post_id'],
                     'title': post['title'],
-                    'clean_text': clean_string(post['text']),
+                    'clean_text': utils.clean_string(post['text']),
                     'link': post['link'],
                     'created_at': post['created_at'],
                 }
@@ -88,18 +88,18 @@ def insert_models_posts(posts):
                     'clean_text': value['clean_text']
                 }
 
-                if count_tokens(value['clean_text']) <= TOKENS_TRASHHOLD_LIMIT:
-                    embedding = str(create_embeddings(json.dumps(to_embedding))[0])
+                if ai.count_tokens(value['clean_text']) <= constants.TOKENS_TRASHHOLD_LIMIT:
+                    embedding = str(ai.create_embeddings(json.dumps(to_embedding))[0])
                     values.append({**value, 'embedding': embedding})
                 else:
-                    for chunk in string_into_chunks(value['clean_text']):
-                        embedding = str(create_embeddings(json.dumps({
+                    for chunk in utils.string_into_chunks(value['clean_text']):
+                        embedding = str(ai.create_embeddings(json.dumps({
                             **to_embedding,
                             'clean_text': chunk
                         })))
                         values.append({**value, 'clean_text': chunk, 'embedding': embedding})
 
             cursor.executemany(f'''
-                INSERT INTO model_reddit_posts (model_repo_id, post_id, title, clean_text, link, created_at, embedding)
+                INSERT INTO {constants.MODEL_REDDIT_POSTS_TABLE_NAME} (model_repo_id, post_id, title, clean_text, link, created_at, embedding)
                 VALUES (%s, %s, %s, %s, %s, FROM_UNIXTIME(%s), JSON_ARRAY_PACK(%s))
             ''', [list(value.values()) for value in values])

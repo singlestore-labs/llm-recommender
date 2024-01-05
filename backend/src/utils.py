@@ -1,30 +1,13 @@
-import json
-import openai
 import re
-import tiktoken
 from bs4 import BeautifulSoup
-from decimal import Decimal
 from markdown import markdown
 
-from .constants import OPENAI_API_KEY, TOKENS_LIMIT
-
-openai.api_key = OPENAI_API_KEY
-
-
-class DecimalEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Decimal):
-            return float(obj)
-        return super(DecimalEncoder, self).default(obj)
-
-
-def count_tokens(text: str):
-    enc = tiktoken.get_encoding('cl100k_base')
-    return len(enc.encode(text))
+from .constants import TOKENS_LIMIT
+from . import ai
 
 
 def string_into_chunks(string: str, max_tokens=TOKENS_LIMIT):
-    if count_tokens(string) <= max_tokens:
+    if ai.count_tokens(string) <= max_tokens:
         return [string]
 
     delimiter = ' '
@@ -33,7 +16,7 @@ def string_into_chunks(string: str, max_tokens=TOKENS_LIMIT):
     current_chunk = []
 
     for word in words:
-        if count_tokens(delimiter.join(current_chunk + [word])) <= max_tokens:
+        if ai.count_tokens(delimiter.join(current_chunk + [word])) <= max_tokens:
             current_chunk.append(word)
         else:
             chunks.append(delimiter.join(current_chunk))
@@ -70,9 +53,5 @@ def clean_string(string: str):
     new_string = re.sub(r'\*\*+', '*', new_string)
     new_string = re.sub(r'--+', '-', new_string)
     new_string = remove_links(new_string)
+
     return new_string
-
-
-def create_embeddings(input):
-    data = openai.embeddings.create(input=input, model='text-embedding-ada-002').data
-    return [i.embedding for i in data]
