@@ -1,9 +1,18 @@
 import re
+import json
 from bs4 import BeautifulSoup
 from markdown import markdown
+from datetime import datetime
 
 from .constants import TOKENS_LIMIT
 from . import ai
+
+
+class JSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.strftime('%Y-%m-%d %H:%M:%S')
+        return super().default(obj)
 
 
 def string_into_chunks(string: str, max_tokens=TOKENS_LIMIT):
@@ -52,6 +61,7 @@ def clean_string(string: str):
     new_string = remove_string_spaces(new_string)
     new_string = re.sub(r'\*\*+', '*', new_string)
     new_string = re.sub(r'--+', '-', new_string)
+    new_string = re.sub(r'====+', '=', new_string)
     new_string = remove_links(new_string)
 
     return new_string

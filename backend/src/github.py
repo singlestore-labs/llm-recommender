@@ -43,10 +43,10 @@ def search_repos(keyword: str, last_repo_created_at):
     return repos
 
 
-def get_models_repos(models):
-    models_repos = {}
+def get_models_repos(existed_models):
+    repos = {}
 
-    for model in models:
+    for model in existed_models:
         try:
             repo_id = model['repo_id']
 
@@ -64,12 +64,16 @@ def get_models_repos(models):
                     last_repo_crated_at = last_repo_crated_at.strftime("%Y-%m-%d")
 
             keyword = model['name'] if re.search(r'\d', model['name']) else repo_id
-            repos = search_repos(keyword, last_repo_crated_at)
-            models_repos[repo_id] = repos
-        except:
-            models_repos[repo_id] = []
+            found_repos = search_repos(keyword, last_repo_crated_at)
 
-    return models_repos
+            if not len(found_repos):
+                continue
+
+            repos[repo_id] = found_repos
+        except Exception as e:
+            print(e)
+
+    return repos
 
 
 def insert_models_repos(repos):

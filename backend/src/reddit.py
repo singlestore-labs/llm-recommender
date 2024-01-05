@@ -40,10 +40,10 @@ def search_posts(keyword: str, latest_post_timestamp):
     return posts
 
 
-def get_models_posts(models):
-    models_posts = {}
+def get_models_posts(existed_models):
+    posts = {}
 
-    for model in models:
+    for model in existed_models:
         repo_id = model['repo_id']
 
         with db.connection.cursor() as cursor:
@@ -58,13 +58,20 @@ def get_models_posts(models):
             latest_post_timestamp = float(latest_post_timestamp[0]) if latest_post_timestamp != None else None
 
         keyword = model['name'] if re.search(r'\d', model['name']) else repo_id
-        posts = search_posts(keyword, latest_post_timestamp)
-        models_posts[repo_id] = posts
+        found_posts = search_posts(keyword, latest_post_timestamp)
 
-    return models_posts
+        if not len(found_posts):
+            continue
+
+        posts[repo_id] = found_posts
+
+    return posts
 
 
 def insert_models_posts(posts):
+    if not len(posts):
+        return
+
     with db.connection.cursor() as cursor:
         for model_repo_id, posts in posts.items():
             if not len(posts):
