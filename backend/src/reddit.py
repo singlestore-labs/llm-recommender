@@ -81,18 +81,19 @@ def insert_models_posts(posts):
                     'created_at': post['created_at'],
                 }
 
+                to_embedding = {
+                    'model_repo_id': model_repo_id,
+                    'title': value['title'],
+                    'clean_text': value['clean_text']
+                }
+
                 if count_tokens(value['clean_text']) <= TOKENS_TRASHHOLD_LIMIT:
-                    embedding = str(create_embeddings(json.dumps({
-                        'model_repo_id': model_repo_id,
-                        'title': value['title'],
-                        'clean_text': value['clean_text']
-                    }))[0])
+                    embedding = str(create_embeddings(json.dumps(to_embedding))[0])
                     values.append({**value, 'embedding': embedding})
                 else:
                     for chunk in string_into_chunks(value['clean_text']):
                         embedding = str(create_embeddings(json.dumps({
-                            'model_repo_id': model_repo_id,
-                            'title': value['title'],
+                            **to_embedding,
                             'clean_text': chunk
                         })))
                         values.append({**value, 'clean_text': chunk, 'embedding': embedding})

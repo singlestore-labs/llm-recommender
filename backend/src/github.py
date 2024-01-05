@@ -90,20 +90,20 @@ def insert_models_repos(repos):
                     'created_at': repo['created_at'],
                 }
 
+                to_embedding = {
+                    'model_repo_id': model_repo_id,
+                    'name': value['name'],
+                    'description': value['description'],
+                    'clean_readme': value['clean_readme']
+                }
+
                 if count_tokens(value['clean_readme']) <= TOKENS_TRASHHOLD_LIMIT:
-                    embedding = str(create_embeddings(json.dumps({
-                        'model_repo_id': model_repo_id,
-                        'name': value['name'],
-                        'description': value['description'],
-                        'clean_readme': value['clean_readme']
-                    }))[0])
+                    embedding = str(create_embeddings(json.dumps(to_embedding))[0])
                     values.append({**value, 'embedding': embedding})
                 else:
                     for chunk in string_into_chunks(value['clean_readme']):
                         embedding = str(create_embeddings(json.dumps({
-                            'model_repo_id': model_repo_id,
-                            'name': value['name'],
-                            'description': value['description'],
+                            **to_embedding,
                             'clean_readme': chunk
                         }))[0])
                         values.append({**value, 'clean_readme': chunk, 'embedding': embedding})
