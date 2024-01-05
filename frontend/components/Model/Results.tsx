@@ -1,6 +1,6 @@
 import { HTMLAttributes } from "react";
 
-import { ComponentProps, ModelResults as TModelResults } from "@/types";
+import { ComponentProps, DB } from "@/types";
 import { cn } from "@/utils";
 import { Heading } from "@/components/Heading";
 import { Card } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { ExternalLink } from "@/components/ExternalLink";
 export type ModelResultsProps = ComponentProps<
   HTMLAttributes<HTMLDivElement>,
   {
-    results: TModelResults;
+    results: DB.ModelResults;
     listClassName?: string;
     borderClassName?: string;
     withExternalLink?: boolean;
@@ -17,7 +17,7 @@ export type ModelResultsProps = ComponentProps<
 >;
 
 const resultsMap: Record<
-  keyof TModelResults,
+  keyof DB.ModelResults,
   { label: string; link?: string }
 > = {
   score: {
@@ -68,7 +68,7 @@ export function ModelResults({
           listClassName,
         )}
       >
-        {(Object.entries(results) as [keyof TModelResults, number][]).map(
+        {(Object.entries(results) as [keyof DB.ModelResults, number][]).map(
           ([key, value], i, arr) => {
             const isLast = !arr[i + 1];
             const map = resultsMap[key];

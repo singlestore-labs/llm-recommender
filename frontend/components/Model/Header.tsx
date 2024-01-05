@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import Link from "next/link";
 import { Download, Heart } from "lucide-react";
 
-import { ComponentProps, Model } from "@/types";
+import { ComponentProps, DB } from "@/types";
 
 import {
   Tooltip,
@@ -16,7 +16,7 @@ import { cn } from "@/utils";
 export type ModelDetailsProps = ComponentProps<
   "div",
   Pick<
-    Model,
+    DB.Model,
     "repo_id" | "name" | "author" | "link" | "likes" | "downloads"
   > & { headingProps?: HeadingProps }
 >;

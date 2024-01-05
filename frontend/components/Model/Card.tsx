@@ -3,7 +3,7 @@
 import { HTMLAttributes, useState } from "react";
 import Link from "next/link";
 
-import { ComponentProps, Model } from "@/types";
+import { ComponentProps, DB } from "@/types";
 import { cn } from "@/utils";
 import {
   Card,
@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { ModelHeader } from "./Header";
 import { ModelResults } from "./Results";
 
-export type CardModel = Omit<Model, "readme"> & { description?: string };
+export type CardModel = DB.Model & { description?: string };
 
 export type ModelCardProps = ComponentProps<
   HTMLAttributes<HTMLDivElement>,
@@ -83,7 +83,7 @@ export function ModelCard({
           }}
         />
         <Button asChild className="ml-auto max-md:w-full">
-          <Link href={`/models/${encodeURIComponent(id)}`} target="_blank">
+          <Link href={`/models/${encodeURIComponent(repo_id)}`} target="_blank">
             View details
           </Link>
         </Button>

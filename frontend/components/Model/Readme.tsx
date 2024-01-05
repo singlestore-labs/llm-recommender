@@ -3,7 +3,7 @@
 import { HTMLAttributes, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
-import { ComponentProps, Model } from "@/types";
+import { ComponentProps, DB } from "@/types";
 import { Markdown } from "@/components/Markdown";
 import {
   Card,
@@ -18,15 +18,16 @@ import { cn } from "@/utils";
 
 export type ModelReadmeProps = ComponentProps<
   HTMLAttributes<HTMLDivElement>,
-  Pick<Model, "repo_id" | "readme"> & {
-    expandedClassName?: string;
-  }
+  Pick<DB.Model, "repo_id"> &
+    Pick<DB.ModelReadme, "text"> & {
+      expandedClassName?: string;
+    }
 >;
 
 export function ModelReadme({
   className,
   repo_id,
-  readme,
+  text,
   expandedClassName,
   ...props
 }: ModelReadmeProps) {
@@ -55,7 +56,7 @@ export function ModelReadme({
           isExpanded && "max-h-none",
         )}
       >
-        <Markdown>{readme}</Markdown>
+        <Markdown>{text}</Markdown>
       </CardContent>
       <CardFooter className="relative h-10 shrink-0 basis-auto border-t p-0">
         <Button

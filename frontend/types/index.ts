@@ -1,3 +1,3 @@
 export * from "./helpers";
-export * from "./db";
+export * as DB from "./db";
 export * from "./ui";

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ComponentProps } from "@/types";
 import { cn } from "@/utils";
 
-import { Button, ButtonProps } from "./ui/button";
+import { Button } from "./ui/button";
 import { Logo } from "./Logo";
 import { Heading } from "./Heading";
 

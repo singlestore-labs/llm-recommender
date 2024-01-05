@@ -1,6 +1,6 @@
 import pick from "lodash.pick";
 
-import { Model } from "@/types";
+import { DB } from "@/types";
 
 import { ModelHeader } from "@/components/Model/Header";
 import { notFound } from "next/navigation";
@@ -13,14 +13,28 @@ import { eleganceServerClient } from "@/services/eleganceServerClient";
 export default async function PageModel({
   params,
 }: {
-  params: { id: string };
+  params: { repo_id: string };
 }) {
-  const id = decodeURIComponent(params.id);
+  const repo_id = decodeURIComponent(params.repo_id);
 
-  const model = await eleganceServerClient.controllers.findOne<Model>({
-    collection: "models",
-    where: `id = '${id}'`,
-  });
+  const [model, readme_parts] = await Promise.all([
+    eleganceServerClient.controllers.findOne<DB.Model>({
+      collection: "models",
+      where: `repo_id = '${repo_id}'`,
+    }),
+    eleganceServerClient.controllers.findMany<Pick<DB.ModelReadme, "text">[]>({
+      collection: "model_readmes",
+      columns: ["text"],
+      where: `model_repo_id = '${repo_id}'`,
+      extra: "ORDER BY created_at DESC",
+    }),
+  ]);
+
+  let readme = "";
+  if (readme_parts?.length) {
+    readme = readme_parts.reduce((acc, curr) => acc + curr.text, "");
+    readme = readme.slice(readme.indexOf("#"));
+  }
 
   if (!model || !Object.keys(model).length) {
     notFound();
@@ -56,7 +70,7 @@ export default async function PageModel({
             className="absolute left-0 top-0 max-h-full w-full"
             expandedClassName="static h-auto"
             repo_id={model.repo_id}
-            readme={model.readme.slice(model.readme.indexOf("#"))}
+            text={readme}
           />
         </div>
 
