@@ -9,13 +9,17 @@ export type SearchModels = (DB.Model & {
   description?: string;
 })[];
 
-const systemRole = `
-  In the role of the LLM Recommender, furnish a brief text description (maximum 256 chars),
-  illustrating why this LLM aligns well with the user's use case.
-  Emphasize its strengths, capabilities, and distinguishing features.
-  Please craft your response in a descriptive format without mentioning
-  the model's name or including links.
-`;
+const systemRole =
+  `In the role of the LLM Recommender, furnish a brief text description (maximum 256 chars),` +
+  `illustrating why this LLM aligns well with the user's use case.` +
+  `Emphasize its strengths, capabilities, and distinguishing features.` +
+  `Please craft your response in a descriptive format without mentioning` +
+  `the model's name or including links.`;
+
+const {
+  ai,
+  controllers: { findMany, findOne, vectorSearch, createChatCompletion },
+} = eleganceServerClient;
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,16 +31,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json("prompt field is required", { status: 400 });
     }
 
-    const promptEmbedding = (
-      await eleganceServerClient.ai.createEmbedding(prompt)
-    )[0];
+    const promptEmbedding = (await ai.createEmbedding(prompt))[0];
 
     const [models, modelReadmes, redditPosts, githubRepos] = await Promise.all([
       (async () => {
         return (
-          await eleganceServerClient.controllers.vectorSearch<
-            DB.WithSimilarity<DB.Model>[]
-          >({
+          await vectorSearch<DB.WithSimilarity<DB.Model>[]>({
             collection: "models",
             embeddingField: "embedding",
             query: prompt,
@@ -47,27 +47,21 @@ export async function POST(request: NextRequest) {
       })() as Promise<
         DB.WithSimilarity<DB.Model & { model_repo_id: DB.Model["repo_id"] }>[]
       >,
-      eleganceServerClient.controllers.vectorSearch<
-        DB.WithSimilarity<DB.ModelReadme>[]
-      >({
+      vectorSearch<DB.WithSimilarity<DB.ModelReadme>[]>({
         collection: "model_readmes",
         embeddingField: "embedding",
         query: prompt,
         queryEmbedding: promptEmbedding,
         limit: 25,
       }),
-      eleganceServerClient.controllers.vectorSearch<
-        DB.WithSimilarity<DB.ModelRedditPost>[]
-      >({
+      vectorSearch<DB.WithSimilarity<DB.ModelRedditPost>[]>({
         collection: "model_reddit_posts",
         embeddingField: "embedding",
         query: prompt,
         queryEmbedding: promptEmbedding,
         limit: 25,
       }),
-      eleganceServerClient.controllers.vectorSearch<
-        DB.WithSimilarity<DB.ModelGitHubRepo>[]
-      >({
+      vectorSearch<DB.WithSimilarity<DB.ModelGitHubRepo>[]>({
         collection: "model_github_repos",
         embeddingField: "embedding",
         query: prompt,
@@ -108,43 +102,78 @@ export async function POST(request: NextRequest) {
 
     let searchModels: SearchModels = await Promise.all(
       searchResults.map(async (searchResult) => {
-        const model = await eleganceServerClient.controllers.findOne({
-          collection: "models",
-          columns: [
-            "id",
-            "name",
-            "author",
-            "repo_id",
-            "score",
-            "arc",
-            "hellaswag",
-            "mmlu",
-            "truthfulqa",
-            "winogrande",
-            "gsm8k",
-            "link",
-            "downloads",
-            "likes",
-            "still_on_hub",
-          ],
-          where: `repo_id = '${searchResult.repoId}'`,
-        });
+        const where = `model_repo_id = '${searchResult.repoId}'`;
+
+        const [model, readmes, redditPosts, githubRepos] = await Promise.all([
+          findOne<DB.Model>({
+            collection: "models",
+            columns: [
+              "id",
+              "name",
+              "author",
+              "repo_id",
+              "score",
+              "arc",
+              "hellaswag",
+              "mmlu",
+              "truthfulqa",
+              "winogrande",
+              "gsm8k",
+              "link",
+              "downloads",
+              "likes",
+              "still_on_hub",
+            ],
+            where: `repo_id = '${searchResult.repoId}'`,
+          }),
+
+          findMany<Pick<DB.ModelReadme, "clean_text">[]>({
+            collection: "model_readmes",
+            columns: ["clean_text"],
+            where,
+          }),
+
+          findMany<Pick<DB.ModelRedditPost, "title" | "clean_text">[]>({
+            collection: "model_reddit_posts",
+            columns: ["title", "clean_text"],
+            where,
+          }),
+
+          findMany<Pick<DB.ModelGitHubRepo, "name" | "clean_text">[]>({
+            collection: "model_github_repos",
+            columns: ["name", "clean_text"],
+            where,
+          }),
+        ]);
 
         let description: string;
 
+        const readme = readmes.reduce((acc, curr) => acc + curr.clean_text, "");
+
+        const github = githubRepos.reduce(
+          (acc, curr) => acc + `Repo: ${curr.name}\n${curr.clean_text}`,
+          "",
+        );
+
+        const reddit = redditPosts.reduce(
+          (acc, curr) => acc + `Post: ${curr.title}\n${curr.clean_text}`,
+          "",
+        );
+
+        let completionPrompt =
+          `The user use case: ${prompt}.` +
+          `The most appropriate model is: ${model.repo_id}.` +
+          `This model description: ${readme}.` +
+          `What people build on GitHub using this model: ${github}.` +
+          `What people share on Reddit about this model: ${reddit}.`;
+
         try {
-          description = "";
-          // description =
-          //   (await eleganceServerClient.controllers.createChatCompletion({
-          //     systemRole,
-          //     prompt: `
-          //       The user use case: ${prompt}.
-          //       The most appropriate model is: ${searchResult.repo_id}.
-          //       This model description: ${searchResult.readme}.
-          //       Related GitHub repositories context: ${searchResult.githubReposContext}.
-          //       Related Reddit posts context: ${searchResult.redditPostsContext}.
-          //     `,
-          //   })) ?? "";
+          const completion = await createChatCompletion({
+            systemRole,
+            prompt: completionPrompt,
+          });
+
+          description = completion ?? "";
         } catch (error) {
           description = "";
         }
@@ -155,6 +184,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(searchModels);
   } catch (error: any) {
+    console.log(error);
     return NextResponse.json(error, { status: error.status });
   }
 }

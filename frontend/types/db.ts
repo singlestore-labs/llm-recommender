@@ -40,7 +40,7 @@ export type ModelGitHubRepo = {
   repo_id: string;
   name: string;
   description: string;
-  clean_readme: string;
+  clean_text: string;
   link: string;
   created_at: string;
 };
