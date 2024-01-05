@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import _groupBy from "lodash.groupby";
 import _omit from "lodash.omit";
+import fs from "fs";
 
 import type { DB } from "@/types";
 import { eleganceServerClient } from "@/services/eleganceServerClient";
@@ -181,6 +182,28 @@ export async function POST(request: NextRequest) {
         return { ...model, description };
       }),
     );
+
+    // ! For testing
+    if (process.env.NODE_ENV === "development") {
+      fs.promises.writeFile(
+        "data/search.json",
+        JSON.stringify(
+          {
+            prompt,
+            models,
+            modelReadmes,
+            redditPosts,
+            githubRepos,
+            grouppedSearchResults,
+            searchResults,
+            finalResult: searchModels,
+          },
+          null,
+          2,
+        ),
+        "utf-8",
+      );
+    }
 
     return NextResponse.json(searchModels);
   } catch (error: any) {
