@@ -1,21 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import _groupBy from "lodash.groupby";
 import _omit from "lodash.omit";
-import fs from "fs";
 
 import type { DB } from "@/types";
 import { eleganceServerClient } from "@/services/eleganceServerClient";
+import { countTokens } from "@/utils/ai";
 
-export type SearchModels = (DB.Model & {
-  description?: string;
-})[];
-
-const systemRole =
-  `In the role of the LLM Recommender, furnish a brief text description (maximum 256 chars),` +
-  `illustrating why this LLM aligns well with the user's use case.` +
-  `Emphasize its strengths, capabilities, and distinguishing features.` +
-  `Please craft your response in a descriptive format without mentioning` +
-  `the model's name or including links.`;
+export type SearchModels = (DB.Model & { description?: string })[];
 
 const {
   ai,
@@ -45,9 +36,7 @@ export async function POST(request: NextRequest) {
             limit: 5,
           })
         ).map((i) => ({ ...i, model_repo_id: i.repo_id }));
-      })() as Promise<
-        DB.WithSimilarity<DB.Model & { model_repo_id: DB.Model["repo_id"] }>[]
-      >,
+      })() as Promise<DB.WithSimilarity<DB.Model & { model_repo_id: DB.Model["repo_id"] }>[]>,
       vectorSearch<DB.WithSimilarity<DB.ModelReadme>[]>({
         collection: "model_readmes",
         embeddingField: "embedding",
@@ -87,13 +76,8 @@ export async function POST(request: NextRequest) {
     const searchResults = (
       await Promise.all(
         Object.entries(grouppedSearchResults).map(async ([repoId, records]) => {
-          const totalSimilarity = records.reduce((acc, curr) => {
-            return acc + curr.similarity;
-          }, 0);
-
-          const avgSimilarity =
-            records.length > 0 ? totalSimilarity / records.length : 0;
-
+          const totalSimilarity = records.reduce((acc, curr) => acc + curr.similarity, 0);
+          const avgSimilarity = records.length > 0 ? totalSimilarity / records.length : 0;
           return { repoId, avgSimilarity };
         }),
       )
@@ -147,67 +131,56 @@ export async function POST(request: NextRequest) {
           }),
         ]);
 
-        let description: string;
-
         const readme = readmes.reduce((acc, curr) => acc + curr.clean_text, "");
-
-        const github = githubRepos.reduce(
-          (acc, curr) => acc + `Repo: ${curr.name}\n${curr.clean_text}`,
-          "",
-        );
-
-        const reddit = redditPosts.reduce(
-          (acc, curr) => acc + `Post: ${curr.title}\n${curr.clean_text}`,
-          "",
-        );
-
-        let completionPrompt =
-          `The user use case: ${prompt}.` +
-          `The most appropriate model is: ${model.repo_id}.` +
-          `This model description: ${readme}.` +
-          `What people build on GitHub using this model: ${github}.` +
-          `What people share on Reddit about this model: ${reddit}.`;
-
-        try {
-          const completion = await createChatCompletion({
-            systemRole,
-            prompt: completionPrompt,
-          });
-
-          description = completion ?? "";
-        } catch (error) {
-          description = "";
-        }
+        const github = githubRepos.reduce((acc, curr) => acc + `Repo: ${curr.name}\n${curr.clean_text}`, "");
+        const reddit = redditPosts.reduce((acc, curr) => acc + `Post: ${curr.title}\n${curr.clean_text}`, "");
+        const description = await createDescriptionCompletion(prompt, model.repo_id, readme, github, reddit);
 
         return { ...model, description };
       }),
     );
 
-    // ! For testing
-    if (process.env.NODE_ENV === "development") {
-      fs.promises.writeFile(
-        "data/search.json",
-        JSON.stringify(
-          {
-            prompt,
-            models,
-            modelReadmes,
-            redditPosts,
-            githubRepos,
-            grouppedSearchResults,
-            searchResults,
-            finalResult: searchModels,
-          },
-          null,
-          2,
-        ),
-        "utf-8",
-      );
-    }
-
     return NextResponse.json(searchModels);
   } catch (error: any) {
     console.log(error);
-    return NextResponse.json(error, { status: error.status });
+    return NextResponse.json(error, {
+      status: error.status,
+    });
   }
+}
+
+async function createDescriptionCompletion(
+  prompt: string,
+  repoId: string,
+  readme: string,
+  github: string,
+  reddit: string,
+) {
+  let completion = "";
+
+  const systemRole = `
+    In the role of the LLM Recommender, generate a brief text description (maximum 256 chars),
+    describing why an LLM aligns well with the user's use case.
+    Emphasize an LLM strengths, capabilities, and distinguishing features.
+    Please response in a descriptive format.
+    Don't include links and an LLM name in your response.
+  `.trim();
+
+  let completionPrompt = `
+    The user use case: ${prompt}.
+    LLM name: ${repoId}.
+    LLM description: ${readme}.
+    What people build on GitHub using this LLM: ${github}.
+    What people share on Reddit about this LLM: ${reddit}.
+  `.trim();
+
+  const tokensLimit = 4000 - countTokens(systemRole);
+
+  while (countTokens(completionPrompt) > tokensLimit) {
+    completionPrompt = completionPrompt.slice(-1, completionPrompt.lastIndexOf("."));
+  }
+
+  completion = (await createChatCompletion({ systemRole, prompt: completionPrompt })) ?? "";
+
+  return completion;
 }

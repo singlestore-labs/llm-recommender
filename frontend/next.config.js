@@ -7,6 +7,10 @@ const nextConfig = {
     });
     return config;
   },
+
+  experimental: {
+    serverComponentsExternalPackages: ["js-tiktoken"],
+  },
 };
 
 module.exports = nextConfig;
