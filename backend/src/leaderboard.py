@@ -1,5 +1,5 @@
-import os
 import json
+import requests
 import pandas as pd
 from time import time
 
@@ -10,14 +10,16 @@ from . import utils
 
 
 def get_df():
-    leaderboard_path = os.path.join('leaderboard/datasets/leaderboard.json')
+    url = 'https://raw.githubusercontent.com/singlestore-labs/llm-recommender/main/backend/leaderboard/datasets/leaderboard.json?token=GHSAT0AAAAAACLI5LF64INSSDY7POI6CXF2ZM4LNOA'
 
-    if os.path.exists(leaderboard_path):
-        df = pd.read_json(leaderboard_path, dtype={'still_on_hub': bool})
-        # ! REMOVE .head(*)
-        return df.head(10)
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        data = json.loads(response.text)
+        df = pd.DataFrame(data).head(10)
+        return df
     else:
-        print(f"The file '{leaderboard_path}' does not exists")
+        print("Failed to retrieve JSON file")
 
 
 def get_models():
