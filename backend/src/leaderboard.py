@@ -16,7 +16,7 @@ def get_df():
 
     if response.status_code == 200:
         data = json.loads(response.text)
-        df = pd.DataFrame(data).head(10)
+        df = pd.DataFrame(data).head(constants.MODELS_LIMIT)
         return df
     else:
         print("Failed to retrieve JSON file")
