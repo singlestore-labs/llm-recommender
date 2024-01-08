@@ -16,7 +16,7 @@
     "@radix-ui/react-slot": "^1.0.2",
     "@radix-ui/react-tooltip": "^1.0.7",
     "@shrutibalasa/tailwind-grid-auto-fit": "^1.1.0",
-    "@singlestore/elegance-sdk": "^0.0.16",
+    "@singlestore/elegance-sdk": "^0.0.17",
     "axios": "^1.6.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
