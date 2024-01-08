@@ -47,7 +47,9 @@ export default function Home() {
       <Dots className="fixed" />
 
       <Heading as="h2" size="hero" className="text-center leading-normal">
-        Find the most appropriate LLM for your use case with the LLM Recommender
+        Find the most appropriate LLM
+        <br />
+        for your use case
       </Heading>
 
       <UseCaseForm className="mb-24 mt-12" isDisabled={isModelsLoading} onSubmit={handleUseCaseFormSubmit} />

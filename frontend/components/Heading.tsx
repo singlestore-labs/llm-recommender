@@ -27,13 +27,6 @@ export type HeadingProps = ComponentProps<
   VariantProps<typeof headingVariants>
 >;
 
-export function Heading({
-  className,
-  children,
-  as: As = "span",
-  size,
-}: HeadingProps) {
-  return (
-    <As className={cn(headingVariants({ size }), className)}>{children}</As>
-  );
+export function Heading({ className, children, as: As = "span", size }: HeadingProps) {
+  return <As className={cn(headingVariants({ size }), className)}>{children}</As>;
 }
