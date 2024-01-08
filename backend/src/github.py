@@ -20,25 +20,29 @@ def search_repos(keyword: str, last_repo_created_at):
     if last_repo_created_at:
         query += f' created:>{last_repo_created_at}'
 
-    for repo in github.search_repositories(query):
-        try:
-            readme_file = repo.get_readme()
+    try:
+        for repo in github.search_repositories(query):
+            try:
+                readme_file = repo.get_readme()
 
-            if readme_file.size > 7000:
+                if readme_file.size > 7000:
+                    continue
+
+                readme = readme_file.decoded_content.decode('utf-8')
+
+                repos.append({
+                    'repo_id': repo.id,
+                    'name': repo.name,
+                    'link': repo.html_url,
+                    'created_at': repo.created_at.timestamp(),
+                    'description': repo.description if bool(repo.description) else '',
+                    'readme': readme,
+                })
+            except:
                 continue
-
-            readme = readme_file.decoded_content.decode('utf-8')
-
-            repos.append({
-                'repo_id': repo.id,
-                'name': repo.name,
-                'link': repo.html_url,
-                'created_at': repo.created_at.timestamp(),
-                'description': repo.description if bool(repo.description) else '',
-                'readme': readme,
-            })
-        except:
-            continue
+    except Exception as e:
+        print('GitHub search repos error: ', e,  f'\nmodel: {keyword}', f'\nquery: {query}')
+        return repos
 
     return repos
 
