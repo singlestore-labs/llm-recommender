@@ -1,4 +1,5 @@
 import fs from "fs";
+import path from "path";
 import { createEleganceServerClient } from "@singlestore/elegance-sdk/server";
 
 export const eleganceServerClient = createEleganceServerClient("mysql", {
@@ -8,7 +9,7 @@ export const eleganceServerClient = createEleganceServerClient("mysql", {
     password: process.env.SINGLESTORE_WORKSPACE_PASSWORD,
     database: process.env.DB_NAME,
     port: process.env.DB_PORT ? +process.env.DB_PORT : undefined,
-    ssl: { ca: fs.readFileSync("./singlestore_bundle.pem") },
+    ssl: { ca: fs.readFileSync(path.join(process.cwd(), "singlestore_bundle.pem")) },
   },
   ai: {
     openai: {
