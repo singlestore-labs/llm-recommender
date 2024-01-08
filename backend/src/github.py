@@ -1,6 +1,6 @@
 import re
 import json
-import datetime
+from datetime import datetime
 
 from github import Github
 from github import Auth
@@ -60,7 +60,7 @@ def get_models_repos(existed_models):
 
                 last_repo_crated_at = cursor.fetchone()
                 if (last_repo_crated_at):
-                    last_repo_crated_at = datetime.datetime.fromtimestamp(float(last_repo_crated_at[0]))
+                    last_repo_crated_at = datetime.fromtimestamp(float(last_repo_crated_at[0]))
                     last_repo_crated_at = last_repo_crated_at.strftime("%Y-%m-%d")
 
             keyword = model['name'] if re.search(r'\d', model['name']) else repo_id
