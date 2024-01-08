@@ -5,22 +5,14 @@ import Link from "next/link";
 
 import { ComponentProps, DB } from "@/types";
 import { cn } from "@/utils";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ModelHeader } from "./Header";
+import { ModelHeader, ModelHeaderProps } from "./Header";
 import { ModelResults } from "./Results";
 
-export type CardModel = DB.Model & { description?: string };
+export type CardModel = DB.Model & { description?: string; details?: ModelHeaderProps["details"] };
 
-export type ModelCardProps = ComponentProps<
-  HTMLAttributes<HTMLDivElement>,
-  CardModel
->;
+export type ModelCardProps = ComponentProps<HTMLAttributes<HTMLDivElement>, CardModel>;
 
 export function ModelCard({
   className,
@@ -39,6 +31,7 @@ export function ModelCard({
   gsm8k,
   downloads,
   description,
+  details,
   ...props
 }: ModelCardProps) {
   const [isDescExpanded, setIsDescExpanded] = useState(false);
@@ -54,6 +47,7 @@ export function ModelCard({
           likes={likes}
           downloads={downloads}
           headingProps={{ size: "sm" }}
+          details={details}
           className="line-clamp-3 max-md:text-center"
         />
       </CardHeader>

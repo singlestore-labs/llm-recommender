@@ -7,7 +7,7 @@ import type { DB } from "@/types";
 import { eleganceServerClient } from "@/services/eleganceServerClient";
 import { countTokens } from "@/utils/ai";
 
-export type SearchModels = (DB.Model & { description?: string })[];
+export type SearchModels = (DB.Model & { description?: string; avgSimilarity: number })[];
 
 const {
   ai,
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
         const reddit = redditPosts.reduce((acc, curr) => acc + `Post: ${curr.title}\n${curr.clean_text}`, "");
         const description = await createDescriptionCompletion(prompt, model.repo_id, readme, github, reddit);
 
-        return { ...model, description };
+        return { ...model, description, avgSimilarity: searchResult.avgSimilarity } satisfies SearchModels[number];
       }),
     );
 

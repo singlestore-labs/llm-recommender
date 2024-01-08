@@ -19,18 +19,9 @@ export function UseCaseModels({
   ...props
 }: UseCaseModelsProps) {
   return (
-    <ModelList
-      {...props}
-      className={cn("flex w-full flex-col", className)}
-      models={models}
-    >
+    <ModelList {...props} className={cn("flex w-full flex-col", className)} models={models}>
       {models.length && onRenegerateClick ? (
-        <Button
-          className="mx-auto mt-6"
-          disabled={isLoading}
-          onClick={onRenegerateClick}
-          isLoading={isLoading}
-        >
+        <Button className="mx-auto mt-6" disabled={isLoading} onClick={onRenegerateClick} isLoading={isLoading}>
           Regenerate
         </Button>
       ) : null}

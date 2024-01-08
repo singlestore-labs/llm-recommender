@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { ScanSearch } from "lucide-react";
 
 import { Defined } from "@/types";
 import type { SearchModels } from "@/app/api/models/search/route";
@@ -17,10 +18,16 @@ export default function Home() {
   const getModels = useCallback(async (prompt: string) => {
     try {
       setIsModelsLoading(true);
-      const response = await api.post<SearchModels>(`/models/search`, {
-        body: { prompt },
+      const response = await api.post<SearchModels>(`/models/search`, { body: { prompt } });
+
+      const models = response.data.map((model) => {
+        const details: UseCaseModelsProps["models"][number]["details"] = [
+          { label: "Similarity score", value: model.avgSimilarity.toFixed(4), icon: ScanSearch },
+        ];
+        return { ...model, details } satisfies UseCaseModelsProps["models"][number];
       });
-      setModels(response.data);
+
+      setModels(models);
     } catch (error: any) {
       setModels([]);
     } finally {
@@ -28,9 +35,7 @@ export default function Home() {
     }
   }, []);
 
-  const handleUseCaseFormSubmit = useCallback<
-    Defined<UseCaseFormProps["onSubmit"]>
-  >(
+  const handleUseCaseFormSubmit = useCallback<Defined<UseCaseFormProps["onSubmit"]>>(
     (values) => {
       getModels(values.prompt);
     },
@@ -45,17 +50,9 @@ export default function Home() {
         Find the most appropriate LLM for your use case with the LLM Recommender
       </Heading>
 
-      <UseCaseForm
-        className="mb-24 mt-12"
-        isDisabled={isModelsLoading}
-        onSubmit={handleUseCaseFormSubmit}
-      />
+      <UseCaseForm className="mb-24 mt-12" isDisabled={isModelsLoading} onSubmit={handleUseCaseFormSubmit} />
 
-      <UseCaseModels
-        models={models}
-        isLoading={isModelsLoading}
-        scrollToFirst
-      />
+      <UseCaseModels models={models} isLoading={isModelsLoading} scrollToFirst />
     </div>
   );
 }
