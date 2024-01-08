@@ -6,6 +6,8 @@ export const eleganceServerClient = createEleganceServerClient("mysql", {
     user: process.env.SINGLESTORE_WORKSPACE_USERNAME,
     password: process.env.SINGLESTORE_WORKSPACE_PASSWORD,
     database: process.env.DB_NAME,
+    port: process.env.DB_PORT ? +process.env.DB_PORT : undefined,
+    ssl: { ca: process.env.DB_SSL },
   },
   ai: {
     openai: {
