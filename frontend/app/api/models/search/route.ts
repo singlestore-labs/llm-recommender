@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
     const promptEmbedding = (await ai.createEmbedding(prompt))[0];
 
-    const [models, modelReadmes, redditPosts, githubRepos] = await Promise.all([
+    const [models, modelReadmes, twitterPosts, redditPosts, githubRepos] = await Promise.all([
       (async () => {
         return (
           await vectorSearch<DB.WithSimilarity<DB.Model>[]>({
@@ -40,6 +40,13 @@ export async function POST(request: NextRequest) {
       })() as Promise<DB.WithSimilarity<DB.Model & { model_repo_id: DB.Model["repo_id"] }>[]>,
       vectorSearch<DB.WithSimilarity<DB.ModelReadme>[]>({
         collection: "model_readmes",
+        embeddingField: "embedding",
+        query: prompt,
+        queryEmbedding: promptEmbedding,
+        limit: 25,
+      }),
+      vectorSearch<DB.WithSimilarity<DB.ModelTwitterPost>[]>({
+        collection: "model_twitter_posts",
         embeddingField: "embedding",
         query: prompt,
         queryEmbedding: promptEmbedding,
@@ -62,13 +69,14 @@ export async function POST(request: NextRequest) {
     ]);
 
     const grouppedSearchResults = _groupBy(
-      [...models, ...modelReadmes, ...redditPosts, ...githubRepos],
+      [...models, ...modelReadmes, ...twitterPosts, ...redditPosts, ...githubRepos],
       "model_repo_id",
     ) as Record<
       string,
       (
         | (typeof models)[number]
         | (typeof modelReadmes)[number]
+        | (typeof twitterPosts)[number]
         | (typeof redditPosts)[number]
         | (typeof githubRepos)[number]
       )[]
@@ -90,7 +98,7 @@ export async function POST(request: NextRequest) {
       searchResults.map(async (searchResult) => {
         const where = `model_repo_id = '${searchResult.repoId}'`;
 
-        const [model, readmes, redditPosts, githubRepos] = await Promise.all([
+        const [model, readmes, twitterPosts, redditPosts, githubRepos] = await Promise.all([
           findOne<DB.Model>({
             collection: "models",
             columns: [
@@ -119,6 +127,12 @@ export async function POST(request: NextRequest) {
             where,
           }),
 
+          findMany<Pick<DB.ModelTwitterPost, "clean_text">[]>({
+            collection: "model_twitter_posts",
+            columns: ["clean_text"],
+            where,
+          }),
+
           findMany<Pick<DB.ModelRedditPost, "title" | "clean_text">[]>({
             collection: "model_reddit_posts",
             columns: ["title", "clean_text"],
@@ -133,11 +147,24 @@ export async function POST(request: NextRequest) {
         ]);
 
         const readme = readmes.reduce((acc, curr) => acc + curr.clean_text, "");
-        const github = githubRepos.reduce((acc, curr) => acc + `Repo: ${curr.name}\n${curr.clean_text}`, "");
-        const reddit = redditPosts.reduce((acc, curr) => acc + `Post: ${curr.title}\n${curr.clean_text}`, "");
-        const description = await createDescriptionCompletion(prompt, model.repo_id, readme, github, reddit);
+        const twitter = twitterPosts.reduce((acc, curr) => acc + `\nPost: ${curr.clean_text}`, "");
+        const reddit = redditPosts.reduce((acc, curr) => acc + `\nPost: ${curr.title}\n${curr.clean_text}`, "");
+        const github = githubRepos.reduce((acc, curr) => acc + `\nRepo: ${curr.name}\n${curr.clean_text}`, "");
 
-        return { ...model, description, avgSimilarity: searchResult.avgSimilarity } satisfies SearchModels[number];
+        const description = await createDescriptionCompletion(
+          prompt,
+          model.repo_id,
+          readme,
+          twitter,
+          github,
+          reddit,
+        );
+
+        return {
+          ...model,
+          description,
+          avgSimilarity: searchResult.avgSimilarity,
+        } satisfies SearchModels[number];
       }),
     );
 
@@ -158,6 +185,7 @@ async function createDescriptionCompletion(
   prompt: string,
   repoId: string,
   readme: string,
+  twitter: string,
   github: string,
   reddit: string,
 ) {
@@ -175,8 +203,9 @@ async function createDescriptionCompletion(
     The user use case: ${prompt}.
     LLM name: ${repoId}.
     LLM description: ${readme}.
-    What people build on GitHub using this LLM: ${github}.
+    What people share on Twitter about this LLM: ${twitter}.
     What people share on Reddit about this LLM: ${reddit}.
+    What people build on GitHub using this LLM: ${github}.
   `.trim();
 
   const tokensLimit = 4000 - countTokens(systemRole);

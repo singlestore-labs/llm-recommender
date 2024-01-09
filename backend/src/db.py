@@ -43,6 +43,19 @@ def create_tables():
                 )
             ''')
 
+    def create_model_twitter_posts_table():
+        with connection.cursor() as cursor:
+            cursor.execute(f'''
+                CREATE TABLE IF NOT EXISTS {constants.MODEL_TWITTER_POSTS_TABLE_NAME} (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    model_repo_id VARCHAR(512),
+                    post_id VARCHAR(256),
+                    clean_text LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+                    created_at TIMESTAMP,
+                    embedding BLOB
+                )
+            ''')
+
     def create_model_reddit_posts_table():
         with connection.cursor() as cursor:
             cursor.execute(f'''
@@ -76,6 +89,7 @@ def create_tables():
 
     create_models_table()
     create_model_readmes_table()
+    create_model_twitter_posts_table()
     create_model_reddit_posts_table()
     create_model_github_repos_table()
 

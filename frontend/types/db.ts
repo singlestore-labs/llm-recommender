@@ -24,6 +24,14 @@ export type ModelReadme = {
   clean_text: string;
 };
 
+export type ModelTwitterPost = {
+  id: number;
+  model_repo_id: string;
+  post_id: string;
+  clean_text: string;
+  created_at: number;
+};
+
 export type ModelRedditPost = {
   id: number;
   model_repo_id: string;
@@ -46,16 +54,7 @@ export type ModelGitHubRepo = {
 };
 
 export type ModelResults = Record<
-  Extract<
-    keyof Model,
-    | "score"
-    | "arc"
-    | "hellaswag"
-    | "mmlu"
-    | "truthfulqa"
-    | "winogrande"
-    | "gsm8k"
-  >,
+  Extract<keyof Model, "score" | "arc" | "hellaswag" | "mmlu" | "truthfulqa" | "winogrande" | "gsm8k">,
   number
 >;
 
