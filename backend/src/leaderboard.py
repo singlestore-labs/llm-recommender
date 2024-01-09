@@ -10,9 +10,7 @@ from . import utils
 
 
 def get_df():
-    url = 'https://raw.githubusercontent.com/singlestore-labs/llm-recommender/main/backend/leaderboard/datasets/leaderboard.json?token=GHSAT0AAAAAACLI5LF64INSSDY7POI6CXF2ZM4LNOA'
-
-    response = requests.get(url)
+    response = requests.get(constants.LEADERBOARD_DATASET_URL)
 
     if response.status_code == 200:
         data = json.loads(response.text)
