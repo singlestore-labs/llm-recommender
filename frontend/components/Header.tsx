@@ -18,14 +18,8 @@ export function Header({ className, ...props }: HeaderProps) {
         className,
       )}
     >
-      <Link
-        href="/"
-        className="flex items-center justify-center max-md:order-2"
-      >
-        <Heading
-          as="h2"
-          className="flex items-center justify-center gap-[0.4em]"
-        >
+      <Link href="/" className="flex items-center justify-center max-md:order-2">
+        <Heading as="h2" className="flex items-center justify-center gap-[0.4em]">
           <Logo variant="1" className="w-[6em] flex-shrink-0" />
           <span className="block h-[1.3335em] w-px bg-current" />
           <span>LLM Recommender</span>
@@ -36,8 +30,8 @@ export function Header({ className, ...props }: HeaderProps) {
         asChild
         className="ml-auto max-md:absolute max-md:left-0 max-md:top-0 max-md:w-full max-md:rounded-none"
       >
-        <Link href="https://www.singlestore.com/" target="_blank">
-          Try Free
+        <Link href="https://www.singlestore.com/cloud-trial" target="_blank">
+          Try SingleStore for Free
         </Link>
       </Button>
     </header>
