@@ -13,12 +13,12 @@ from . import utils
 github = Github(auth=Auth.Token(constants.GITHUB_ACCESS_TOKEN))
 
 
-def search_repos(keyword: str, last_repo_created_at):
+def search_repos(keyword: str, last_created_at):
     repos = []
     query = f'"{keyword}" in:name,description,readme'
 
-    if last_repo_created_at:
-        query += f' created:>{last_repo_created_at}'
+    if last_created_at:
+        query += f' created:>{last_created_at}'
 
     try:
         for repo in github.search_repositories(query):
@@ -41,7 +41,6 @@ def search_repos(keyword: str, last_repo_created_at):
             except:
                 continue
     except Exception as e:
-        print('GitHub search repos error: ', e,  f'\nmodel: {keyword}', f'\nquery: {query}')
         return repos
 
     return repos
@@ -62,13 +61,13 @@ def get_models_repos(existed_models):
                     LIMIT 1
                 """)
 
-                last_repo_crated_at = cursor.fetchone()
-                if (last_repo_crated_at):
-                    last_repo_crated_at = datetime.fromtimestamp(float(last_repo_crated_at[0]))
-                    last_repo_crated_at = last_repo_crated_at.strftime("%Y-%m-%d")
+                last_created_at = cursor.fetchone()
+                if (last_created_at):
+                    last_created_at = datetime.fromtimestamp(float(last_created_at[0]))
+                    last_created_at = last_created_at.strftime('%Y-%m-%dT%H:%M:%SZ')
 
             keyword = model['name'] if re.search(r'\d', model['name']) else repo_id
-            found_repos = search_repos(keyword, last_repo_crated_at)
+            found_repos = search_repos(keyword, last_created_at)
 
             if not len(found_repos):
                 continue
