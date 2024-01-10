@@ -38,61 +38,57 @@ def insert_models(models):
     if not len(models):
         return
 
-    _models = []
-    readmes = []
-
     for model in models:
-        _model = {key: value for key, value in model.items() if key != 'readme'}
-        to_embedding = json.dumps(_model, cls=utils.JSONEncoder)
-        embedding = str(ai.create_embedding(to_embedding))
-        _models.append({**_model, embedding: embedding})
+        try:
+            _model = {key: value for key, value in model.items() if key != 'readme'}
+            to_embedding = json.dumps(_model, cls=utils.JSONEncoder)
+            embedding = str(ai.create_embedding(to_embedding))
+            model_to_insert = {**_model, embedding: embedding}
+            readmes_to_insert = []
 
-        if not model['readme']:
-            continue
-
-        readme = {
-            'model_repo_id': model['repo_id'],
-            'text': model['readme'],
-            'created_at': time()
-        }
-
-        if ai.count_tokens(readme['text']) <= constants.TOKENS_TRASHHOLD_LIMIT:
-            readme['clean_text'] = utils.clean_string(readme['text'])
-            to_embedding = json.dumps({
-                'model_repo_id': readme['model_repo_id'],
-                'clean_text': readme['clean_text'],
-            })
-            readme['embedding'] = str(ai.create_embedding(to_embedding))
-            readmes.append(readme)
-        else:
-            for i, chunk in enumerate(utils.string_into_chunks(readme['text'])):
-                _readme = {
-                    **readme,
-                    'text': chunk,
+            if model['readme']:
+                readme = {
+                    'model_repo_id': model['repo_id'],
+                    'text': model['readme'],
                     'created_at': time()
                 }
 
-                _readme['clean_text'] = utils.clean_string(chunk)
-                to_embedding = json.dumps({
-                    'model_repo_id': _readme['model_repo_id'],
-                    'clean_text': chunk,
-                })
-                _readme['embedding'] = str(ai.create_embedding(to_embedding))
-                readmes.append(_readme)
+                if ai.count_tokens(readme['text']) <= constants.TOKENS_TRASHHOLD_LIMIT:
+                    readme['clean_text'] = utils.clean_string(readme['text'])
+                    to_embedding = json.dumps({
+                        'model_repo_id': readme['model_repo_id'],
+                        'clean_text': readme['clean_text'],
+                    })
+                    readme['embedding'] = str(ai.create_embedding(to_embedding))
+                    readmes_to_insert.append(readme)
+                else:
+                    for i, chunk in enumerate(utils.string_into_chunks(readme['text'])):
+                        _readme = {
+                            **readme,
+                            'text': chunk,
+                            'created_at': time()
+                        }
 
-    with db.connection.cursor() as cursor:
-        model_values = [tuple(model.values()) for model in _models]
+                        _readme['clean_text'] = utils.clean_string(chunk)
+                        to_embedding = json.dumps({
+                            'model_repo_id': _readme['model_repo_id'],
+                            'clean_text': chunk,
+                        })
+                        _readme['embedding'] = str(ai.create_embedding(to_embedding))
+                        readmes_to_insert.append(_readme)
 
-        for chunk in utils.list_into_chunks(model_values, 5):
-            cursor.executemany(f'''
-                INSERT INTO {constants.MODELS_TABLE_NAME} (name, author, repo_id, score, link, still_on_hub, arc, hellaswag, mmlu, truthfulqa, winogrande, gsm8k, downloads, likes, created_at, embedding)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, FROM_UNIXTIME(%s), JSON_ARRAY_PACK(%s))
-            ''', chunk)
+                with db.connection.cursor() as cursor:
+                    cursor.execute(f'''
+                        INSERT INTO {constants.MODELS_TABLE_NAME} (name, author, repo_id, score, link, still_on_hub, arc, hellaswag, mmlu, truthfulqa, winogrande, gsm8k, downloads, likes, created_at, embedding)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, FROM_UNIXTIME(%s), JSON_ARRAY_PACK(%s))
+                    ''', tuple(model_to_insert.values()))
 
-        readme_values = [tuple(readme.values()) for readme in readmes]
-
-        for chunk in utils.list_into_chunks(readme_values, 5):
-            cursor.executemany(f'''
-                INSERT INTO {constants.MODEL_READMES_TABLE_NAME} (model_repo_id, text, created_at, clean_text, embedding)
-                VALUES (%s, %s, FROM_UNIXTIME(%s), %s, JSON_ARRAY_PACK(%s))
-            ''', chunk)
+                for chunk in utils.list_into_chunks([tuple(readme.values()) for readme in readmes_to_insert]):
+                    with db.connection.cursor() as cursor:
+                        cursor.executemany(f'''
+                            INSERT INTO {constants.MODEL_READMES_TABLE_NAME} (model_repo_id, text, created_at, clean_text, embedding)
+                            VALUES (%s, %s, FROM_UNIXTIME(%s), %s, JSON_ARRAY_PACK(%s))
+                        ''', chunk)
+        except Exception as e:
+            print(e)
+            continue

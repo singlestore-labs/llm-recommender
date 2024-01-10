@@ -64,19 +64,20 @@ def get_models_posts(existed_models):
             posts[repo_id] = found_posts
         except Exception as e:
             print(e)
+            continue
 
     return posts
 
 
 def insert_models_posts(posts):
-    with db.connection.cursor() as cursor:
-        for model_repo_id, posts in posts.items():
-            if not len(posts):
-                continue
+    for model_repo_id, posts in posts.items():
+        if not len(posts):
+            continue
 
-            values = []
+        for post in posts:
+            try:
+                values = []
 
-            for post in posts:
                 value = {
                     'model_repo_id': model_repo_id,
                     'post_id': post['post_id'],
@@ -92,8 +93,12 @@ def insert_models_posts(posts):
                 embedding = str(ai.create_embedding(json.dumps(to_embedding)))
                 values.append({**value, 'embedding': embedding})
 
-            for chunk in utils.list_into_chunks([list(value.values()) for value in values]):
-                cursor.executemany(f'''
-                    INSERT INTO {constants.MODEL_TWITTER_POSTS_TABLE_NAME} (model_repo_id, post_id, clean_text, created_at, embedding)
-                    VALUES (%s, %s, %s, FROM_UNIXTIME(%s), JSON_ARRAY_PACK(%s))
-                ''', chunk)
+                for chunk in utils.list_into_chunks([list(value.values()) for value in values]):
+                    with db.connection.cursor() as cursor:
+                        cursor.executemany(f'''
+                                INSERT INTO {constants.MODEL_TWITTER_POSTS_TABLE_NAME} (model_repo_id, post_id, clean_text, created_at, embedding)
+                                VALUES (%s, %s, %s, FROM_UNIXTIME(%s), JSON_ARRAY_PACK(%s))
+                            ''', chunk)
+            except Exception as e:
+                print(e)
+                continue

@@ -40,7 +40,7 @@ def search_repos(keyword: str, last_created_at):
                 })
             except:
                 continue
-    except Exception as e:
+    except Exception:
         return repos
 
     return repos
@@ -75,19 +75,19 @@ def get_models_repos(existed_models):
             repos[repo_id] = found_repos
         except Exception as e:
             print(e)
+            continue
 
     return repos
 
 
 def insert_models_repos(repos):
-    with db.connection.cursor() as cursor:
-        for model_repo_id, repos in repos.items():
-            if not len(repos):
-                continue
+    for model_repo_id, repos in repos.items():
+        if not len(repos):
+            continue
 
-            values = []
-
-            for repo in repos:
+        for repo in repos:
+            try:
+                values = []
                 value = {
                     'model_repo_id': model_repo_id,
                     'repo_id': repo['repo_id'],
@@ -116,8 +116,12 @@ def insert_models_repos(repos):
                         })))
                         values.append({**value, 'clean_text': chunk, 'embedding': embedding})
 
-            for chunk in utils.list_into_chunks([list(value.values()) for value in values]):
-                cursor.executemany(f'''
-                    INSERT INTO {constants.MODEL_GITHUB_REPOS_TABLE_NAME} (model_repo_id, repo_id, name, description, clean_text, link, created_at, embedding)
-                    VALUES (%s, %s, %s, %s, %s, %s, FROM_UNIXTIME(%s), JSON_ARRAY_PACK(%s))
-                ''', chunk)
+                for chunk in utils.list_into_chunks([list(value.values()) for value in values]):
+                    with db.connection.cursor() as cursor:
+                        cursor.executemany(f'''
+                                INSERT INTO {constants.MODEL_GITHUB_REPOS_TABLE_NAME} (model_repo_id, repo_id, name, description, clean_text, link, created_at, embedding)
+                                VALUES (%s, %s, %s, %s, %s, %s, FROM_UNIXTIME(%s), JSON_ARRAY_PACK(%s))
+                            ''', chunk)
+            except Exception as e:
+                print(e)
+                continue

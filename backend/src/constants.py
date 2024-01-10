@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-MODELS_LIMIT = 30
+MODELS_LIMIT = 10
 
 DB_CONNECTION_URL = os.environ.get('DB_CONNECTION_URL')
 DB_NAME = os.environ.get('DB_NAME')
