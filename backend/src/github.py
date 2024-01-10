@@ -116,7 +116,8 @@ def insert_models_repos(repos):
                         })))
                         values.append({**value, 'clean_text': chunk, 'embedding': embedding})
 
-            cursor.executemany(f'''
-                INSERT INTO {constants.MODEL_GITHUB_REPOS_TABLE_NAME} (model_repo_id, repo_id, name, description, clean_text, link, created_at, embedding)
-                VALUES (%s, %s, %s, %s, %s, %s, FROM_UNIXTIME(%s), JSON_ARRAY_PACK(%s))
-            ''', [list(value.values()) for value in values])
+            for chunk in utils.list_into_chunks([list(value.values()) for value in values]):
+                cursor.executemany(f'''
+                    INSERT INTO {constants.MODEL_GITHUB_REPOS_TABLE_NAME} (model_repo_id, repo_id, name, description, clean_text, link, created_at, embedding)
+                    VALUES (%s, %s, %s, %s, %s, %s, FROM_UNIXTIME(%s), JSON_ARRAY_PACK(%s))
+                ''', chunk)

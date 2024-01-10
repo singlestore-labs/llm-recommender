@@ -42,7 +42,6 @@ def insert_models(models):
     readmes = []
 
     for model in models:
-        model['created_at'] = model['created_at'].timestamp()
         _model = {key: value for key, value in model.items() if key != 'readme'}
         to_embedding = json.dumps(_model, cls=utils.JSONEncoder)
         embedding = str(ai.create_embedding(to_embedding))
@@ -83,13 +82,17 @@ def insert_models(models):
 
     with db.connection.cursor() as cursor:
         model_values = [tuple(model.values()) for model in _models]
-        cursor.executemany(f'''
-            INSERT INTO {constants.MODELS_TABLE_NAME} (name, author, repo_id, score, link, still_on_hub, arc, hellaswag, mmlu, truthfulqa, winogrande, gsm8k, downloads, likes, created_at, embedding)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, FROM_UNIXTIME(%s), JSON_ARRAY_PACK(%s))
-        ''', model_values)
+
+        for chunk in utils.list_into_chunks(model_values, 5):
+            cursor.executemany(f'''
+                INSERT INTO {constants.MODELS_TABLE_NAME} (name, author, repo_id, score, link, still_on_hub, arc, hellaswag, mmlu, truthfulqa, winogrande, gsm8k, downloads, likes, created_at, embedding)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, FROM_UNIXTIME(%s), JSON_ARRAY_PACK(%s))
+            ''', chunk)
 
         readme_values = [tuple(readme.values()) for readme in readmes]
-        cursor.executemany(f'''
-            INSERT INTO {constants.MODEL_READMES_TABLE_NAME} (model_repo_id, text, created_at, clean_text, embedding)
-            VALUES (%s, %s, FROM_UNIXTIME(%s), %s, JSON_ARRAY_PACK(%s))
-        ''', readme_values)
+
+        for chunk in utils.list_into_chunks(readme_values, 5):
+            cursor.executemany(f'''
+                INSERT INTO {constants.MODEL_READMES_TABLE_NAME} (model_repo_id, text, created_at, clean_text, embedding)
+                VALUES (%s, %s, FROM_UNIXTIME(%s), %s, JSON_ARRAY_PACK(%s))
+            ''', chunk)

@@ -92,7 +92,8 @@ def insert_models_posts(posts):
                 embedding = str(ai.create_embedding(json.dumps(to_embedding)))
                 values.append({**value, 'embedding': embedding})
 
-            cursor.executemany(f'''
-                INSERT INTO {constants.MODEL_TWITTER_POSTS_TABLE_NAME} (model_repo_id, post_id, clean_text, created_at, embedding)
-                VALUES (%s, %s, %s, FROM_UNIXTIME(%s), JSON_ARRAY_PACK(%s))
-            ''', [list(value.values()) for value in values])
+            for chunk in utils.list_into_chunks([list(value.values()) for value in values]):
+                cursor.executemany(f'''
+                    INSERT INTO {constants.MODEL_TWITTER_POSTS_TABLE_NAME} (model_repo_id, post_id, clean_text, created_at, embedding)
+                    VALUES (%s, %s, %s, FROM_UNIXTIME(%s), JSON_ARRAY_PACK(%s))
+                ''', chunk)

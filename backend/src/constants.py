@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-MODELS_LIMIT = 10
+MODELS_LIMIT = 30
 
 DB_CONNECTION_URL = os.environ.get('DB_CONNECTION_URL')
 DB_NAME = os.environ.get('DB_NAME')
@@ -14,7 +14,7 @@ HF_TOKEN = os.getenv('HF_TOKEN')
 
 TWITTER_BEARER_TOKEN = os.getenv('TWITTER_BEARER_TOKEN')
 
-LEADERBOARD_DATASET_URL = ''
+LEADERBOARD_DATASET_URL = 'https://llm-recommender.vercel.app/datasets/leaderboard.json'
 
 REDDIT_USERNAME = os.getenv('REDDIT_USERNAME')
 REDDIT_PASSWORD = os.getenv('REDDIT_PASSWORD')

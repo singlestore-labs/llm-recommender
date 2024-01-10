@@ -15,6 +15,11 @@ class JSONEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
+def list_into_chunks(lst, chunk_size=100):
+    for i in range(0, len(lst), chunk_size):
+        yield lst[i:i + chunk_size]
+
+
 def string_into_chunks(string: str, max_tokens=TOKENS_LIMIT):
     if ai.count_tokens(string) <= max_tokens:
         return [string]
