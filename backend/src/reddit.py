@@ -17,7 +17,7 @@ reddit = praw.Reddit(
 )
 
 
-def search_posts(keyword: str, latest_post_timestamp):
+def reddit_search_posts(keyword: str, latest_post_timestamp):
     posts = []
 
     # https://www.reddit.com/dev/api/#GET_search
@@ -43,7 +43,49 @@ def search_posts(keyword: str, latest_post_timestamp):
     return posts
 
 
-def get_models_posts(existed_models):
+def reddit_insert_model_posts(model_repo_id, posts):
+    for post in posts:
+        try:
+            values = []
+
+            value = {
+                'model_repo_id': model_repo_id,
+                'post_id': post['post_id'],
+                'title': post['title'],
+                'clean_text': utils.clean_string(post['text']),
+                'link': post['link'],
+                'created_at': post['created_at'],
+            }
+
+            to_embedding = {
+                'model_repo_id': model_repo_id,
+                'title': value['title'],
+                'clean_text': value['clean_text']
+            }
+
+            if ai.count_tokens(value['clean_text']) <= constants.TOKENS_TRASHHOLD_LIMIT:
+                embedding = str(ai.create_embedding(json.dumps(to_embedding)))
+                values.append({**value, 'embedding': embedding})
+            else:
+                for chunk in utils.string_into_chunks(value['clean_text']):
+                    embedding = str(ai.create_embedding(json.dumps({
+                        **to_embedding,
+                        'clean_text': chunk
+                    })))
+                    values.append({**value, 'clean_text': chunk, 'embedding': embedding})
+
+            for chunk in utils.list_into_chunks([list(value.values()) for value in values]):
+                with db.connection.cursor() as cursor:
+                    cursor.executemany(f'''
+                        INSERT INTO {constants.MODEL_REDDIT_POSTS_TABLE_NAME} (model_repo_id, post_id, title, clean_text, link, created_at, embedding)
+                        VALUES (%s, %s, %s, %s, %s, FROM_UNIXTIME(%s), JSON_ARRAY_PACK(%s))
+                    ''', chunk)
+        except Exception as e:
+            print(e)
+            continue
+
+
+def reddit_process_models_posts(existed_models):
     posts = {}
 
     for model in existed_models:
@@ -62,64 +104,14 @@ def get_models_posts(existed_models):
                 latest_post_timestamp = float(latest_post_timestamp[0]) if latest_post_timestamp != None else None
 
             keyword = model['name'] if re.search(r'\d', model['name']) else repo_id
-            found_posts = search_posts(keyword, latest_post_timestamp)
+            found_posts = reddit_search_posts(keyword, latest_post_timestamp)
 
             if not len(found_posts):
                 continue
 
-            posts[repo_id] = found_posts
+            reddit_insert_model_posts(repo_id, found_posts)
         except Exception as e:
             print(e)
             continue
 
     return posts
-
-
-def insert_models_posts(posts):
-    if not len(posts):
-        return
-
-    for model_repo_id, posts in posts.items():
-        if not len(posts):
-            continue
-
-        for post in posts:
-            try:
-                values = []
-
-                value = {
-                    'model_repo_id': model_repo_id,
-                    'post_id': post['post_id'],
-                    'title': post['title'],
-                    'clean_text': utils.clean_string(post['text']),
-                    'link': post['link'],
-                    'created_at': post['created_at'],
-                }
-
-                to_embedding = {
-                    'model_repo_id': model_repo_id,
-                    'title': value['title'],
-                    'clean_text': value['clean_text']
-                }
-
-                if ai.count_tokens(value['clean_text']) <= constants.TOKENS_TRASHHOLD_LIMIT:
-                    embedding = str(ai.create_embedding(json.dumps(to_embedding)))
-                    values.append({**value, 'embedding': embedding})
-                else:
-                    for chunk in utils.string_into_chunks(value['clean_text']):
-                        embedding = str(ai.create_embedding(json.dumps({
-                            **to_embedding,
-                            'clean_text': chunk
-                        })))
-                        values.append({**value, 'clean_text': chunk, 'embedding': embedding})
-
-                for chunk in utils.list_into_chunks([list(value.values()) for value in values]):
-                    with db.connection.cursor() as cursor:
-
-                        cursor.executemany(f'''
-                            INSERT INTO {constants.MODEL_REDDIT_POSTS_TABLE_NAME} (model_repo_id, post_id, title, clean_text, link, created_at, embedding)
-                            VALUES (%s, %s, %s, %s, %s, FROM_UNIXTIME(%s), JSON_ARRAY_PACK(%s))
-                        ''', chunk)
-            except Exception as e:
-                print(e)
-                continue
