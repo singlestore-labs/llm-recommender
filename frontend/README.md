@@ -4,7 +4,7 @@
 
 1. Sign up for [SingleStore](https://www.singlestore.com/cloud-trial/), create a workspace and database
 2. Download an SSL `singlestore_bundle.pem` certificate and place it in the project root
-3. Create an `.env` file based on the `.env.sample` file
+3. Create a `.env` file based on the `.env.sample` file
 4. Install dependencies once by running: `npm i`
 5. Build the application once by running: `npm run build`
 

@@ -9,10 +9,14 @@ export function Footer({ className, ...props }: FooterProps) {
     <footer {...props} className={cn("flex items-center justify-center py-8 text-center", className)}>
       <p className="text-muted-foreground">
         Built with ❤️ on{" "}
-        <Link href="https://www.singlestore.com/" target="_blank" className="underline hover:text-zinc-800">
-          SingleStoreDB
+        <Link
+          href="https://www.singlestore.com/blog/introducing-singlestore-free-shared-tier/"
+          target="_blank"
+          className="underline hover:text-zinc-800"
+        >
+          SingleStoreDB Free Shared Tier
         </Link>{" "}
-        Free Shared Tier and{" "}
+        and{" "}
         <Link href="https://vercel.com/home" target="_blank" className="underline hover:text-zinc-800">
           Vercel
         </Link>
