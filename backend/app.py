@@ -1,4 +1,5 @@
 import src.db as db
+from src.constants import MODELS_LIMIT
 from src.github import github_process_models_repos
 from src.leaderboard import leaderboard_process_models
 from src.reddit import reddit_process_models_posts
@@ -14,7 +15,7 @@ db.create_tables()
 
 leaderboard_process_models()
 
-existed_models = db.get_models('repo_id, name', 'ORDER BY score DESC')
+existed_models = db.get_models('repo_id, name', f'ORDER BY score DESC LIMIT {MODELS_LIMIT}')
 
 twitter_process_models_posts(existed_models)
 reddit_process_models_posts(existed_models)
