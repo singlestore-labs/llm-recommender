@@ -1,6 +1,7 @@
+import asyncio
 import re
 import json
-import praw
+import asyncpraw
 
 from . import constants
 from . import db
@@ -8,43 +9,48 @@ from . import ai
 from . import utils
 
 # https://www.reddit.com/prefs/apps
-reddit = praw.Reddit(
-    username=constants.REDDIT_USERNAME,
-    password=constants.REDDIT_PASSWORD,
-    client_id=constants.REDDIT_CLIENT_ID,
-    client_secret=constants.REDDIT_CLIENT_SECRET,
-    user_agent=constants.REDDIT_USER_AGENT
-)
 
 
-def reddit_search_posts(keyword: str, latest_post_timestamp):
+def get_reddit():
+    return asyncpraw.Reddit(
+        username=constants.REDDIT_USERNAME,
+        password=constants.REDDIT_PASSWORD,
+        client_id=constants.REDDIT_CLIENT_ID,
+        client_secret=constants.REDDIT_CLIENT_SECRET,
+        user_agent=constants.REDDIT_USER_AGENT
+    )
+
+
+async def reddit_search_posts(keyword: str, last_created_at):
     posts = []
 
     # https://www.reddit.com/dev/api/#GET_search
     # https://praw.readthedocs.io/en/stable/code_overview/models/subreddit.html#praw.models.Subreddit.search
     try:
-        for post in reddit.subreddit('all').search(
-                f'"{keyword}"', sort='relevance', time_filter='year', limit=100
-        ):
-            contains_keyword = keyword in post.title or keyword in post.selftext
+        async with get_reddit() as reddit:
+            subreddit = await reddit.subreddit('all')
+            async for post in subreddit.search(
+                    f'"{keyword}"', sort='relevance', time_filter='year', limit=100
+            ):
+                contains_keyword = keyword in post.title or keyword in post.selftext
 
-            if contains_keyword and not post.over_18:
-                if not latest_post_timestamp or (post.created_utc > latest_post_timestamp):
-                    posts.append({
-                        'post_id': post.id,
-                        'title': post.title,
-                        'text': post.selftext,
-                        'link': f'https://www.reddit.com{post.permalink}',
-                        'created_at': post.created_utc,
-                    })
-    except Exception:
-        return posts
+                if contains_keyword and not post.over_18:
+                    if not last_created_at or (post.created_utc > last_created_at):
+                        posts.append({
+                            'post_id': post.id,
+                            'title': post.title,
+                            'text': post.selftext,
+                            'link': f'https://www.reddit.com{post.permalink}',
+                            'created_at': post.created_utc,
+                        })
+    except Exception as e:
+        print('Error reddit_search_posts: ', e)
 
     return posts
 
 
-def reddit_insert_model_posts(model_repo_id, posts):
-    for post in posts:
+async def reddit_insert_model_posts(model_repo_id, posts):
+    async def insert(post):
         try:
             values = []
 
@@ -81,37 +87,28 @@ def reddit_insert_model_posts(model_repo_id, posts):
                         VALUES (%s, %s, %s, %s, %s, FROM_UNIXTIME(%s), JSON_ARRAY_PACK(%s))
                     ''', chunk)
         except Exception as e:
-            print(e)
-            continue
+            print('Error reddit_insert_model_posts: ', e)
+
+    tasks = [insert(model) for model in posts]
+    await asyncio.gather(*tasks)
 
 
-def reddit_process_models_posts(existed_models):
-    posts = {}
+async def reddit_process_models_posts(existed_models):
+    print('Processing Reddit posts')
 
-    for model in existed_models:
+    async def process(model):
         try:
             repo_id = model['repo_id']
-
-            with db.connection.cursor() as cursor:
-                cursor.execute(f"""
-                    SELECT UNIX_TIMESTAMP(created_at) FROM {constants.MODEL_REDDIT_POSTS_TABLE_NAME}
-                    WHERE model_repo_id = '{repo_id}'
-                    ORDER BY created_at DESC
-                    LIMIT 1
-                """)
-
-                latest_post_timestamp = cursor.fetchone()
-                latest_post_timestamp = float(latest_post_timestamp[0]) if latest_post_timestamp != None else None
-
+            last_created_at = db.db_get_last_created_at(constants.MODEL_REDDIT_POSTS_TABLE_NAME, repo_id)
             keyword = model['name'] if re.search(r'\d', model['name']) else repo_id
-            found_posts = reddit_search_posts(keyword, latest_post_timestamp)
+            found_posts = await reddit_search_posts(keyword, last_created_at)
 
             if not len(found_posts):
-                continue
+                return
 
-            reddit_insert_model_posts(repo_id, found_posts)
+            await reddit_insert_model_posts(repo_id, found_posts)
         except Exception as e:
-            print(e)
-            continue
+            print('Error reddit_process_models_posts: ', e)
 
-    return posts
+    tasks = [process(model) for model in existed_models]
+    await asyncio.gather(*tasks)

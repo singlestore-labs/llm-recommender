@@ -1,6 +1,6 @@
+import asyncio
 import re
 import json
-from datetime import datetime
 
 from github import Github
 from github import Auth
@@ -38,16 +38,17 @@ def github_search_repos(keyword: str, last_created_at):
                     'description': repo.description if bool(repo.description) else '',
                     'readme': readme,
                 })
-            except:
+            except Exception as e:
+                print('Error github_search_repos: ', e)
                 continue
-    except Exception:
-        return repos
+    except Exception as e:
+        print('Error github_search_repos: ', e)
 
     return repos
 
 
-def github_insert_model_repos(model_repo_id, repos):
-    for repo in repos:
+async def github_insert_model_repos(model_repo_id, repos):
+    async def insert(repo):
         try:
             values = []
             value = {
@@ -85,35 +86,28 @@ def github_insert_model_repos(model_repo_id, repos):
                         VALUES (%s, %s, %s, %s, %s, %s, FROM_UNIXTIME(%s), JSON_ARRAY_PACK(%s))
                     ''', chunk)
         except Exception as e:
-            print(e)
-            continue
+            print('Error github_insert_model_repos: ', e)
+
+    tasks = [insert(repo) for repo in repos]
+    await asyncio.gather(*tasks)
 
 
-def github_process_models_repos(existed_models):
-    for model in existed_models:
+async def github_process_models_repos(existed_models):
+    print('Processing GitHub posts')
+
+    async def process(model):
         try:
             repo_id = model['repo_id']
-
-            with db.connection.cursor() as cursor:
-                cursor.execute(f"""
-                    SELECT UNIX_TIMESTAMP(created_at) FROM {constants.MODEL_GITHUB_REPOS_TABLE_NAME}
-                    WHERE model_repo_id = '{repo_id}'
-                    ORDER BY created_at DESC
-                    LIMIT 1
-                """)
-
-                last_created_at = cursor.fetchone()
-                if (last_created_at):
-                    last_created_at = datetime.fromtimestamp(float(last_created_at[0]))
-                    last_created_at = last_created_at.strftime('%Y-%m-%dT%H:%M:%SZ')
-
+            last_created_at = db.db_get_last_created_at(constants.MODEL_GITHUB_REPOS_TABLE_NAME, repo_id, True)
             keyword = model['name'] if re.search(r'\d', model['name']) else repo_id
             found_repos = github_search_repos(keyword, last_created_at)
 
             if not len(found_repos):
-                continue
+                return
 
-            github_insert_model_repos(repo_id, found_repos)
+            await github_insert_model_repos(repo_id, found_repos)
         except Exception as e:
-            print(e)
-            continue
+            print('Error github_process_models_repos: ', e)
+
+    tasks = [process(model) for model in existed_models]
+    await asyncio.gather(*tasks)

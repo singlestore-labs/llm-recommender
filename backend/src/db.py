@@ -1,4 +1,5 @@
 import singlestoredb as s2
+from datetime import datetime
 
 from . import constants
 
@@ -113,3 +114,22 @@ def get_models(select='*', query='', as_dict=True):
             return [dict(zip(columns, row)) for row in cursor.fetchall()]
 
         return cursor.fetchall()
+
+
+def db_get_last_created_at(table, repo_id, to_string=False):
+    with connection.cursor() as cursor:
+        cursor.execute(f"""
+            SELECT UNIX_TIMESTAMP(created_at) FROM {table}
+            WHERE model_repo_id = '{repo_id}'
+            ORDER BY created_at DESC
+            LIMIT 1
+        """)
+
+        rows = cursor.fetchone()
+        created_at = float(rows[0]) if rows and rows[0] else None
+
+        if (created_at and to_string):
+            created_at = datetime.fromtimestamp(created_at)
+            created_at = created_at.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+        return created_at

@@ -1,3 +1,4 @@
+import asyncio
 import json
 import requests
 import pandas as pd
@@ -72,15 +73,18 @@ def leaderboard_insert_model(model):
                     VALUES (%s, %s, FROM_UNIXTIME(%s), %s, JSON_ARRAY_PACK(%s))
                 ''', chunk)
     except Exception as e:
-        print(e)
+        print('Error leaderboard_insert_model: ', e)
 
 
-def leaderboard_process_models():
+async def leaderboard_process_models():
+    print('Processing models')
+
     existed_model_repo_ids = [i[0] for i in db.get_models('repo_id', as_dict=False)]
     leaderboard_df = leaderboard_get_df()
 
-    for i, row in leaderboard_df.iterrows():
-        if row['repo_id'] in existed_model_repo_ids:
-            continue
+    async def process(row):
+        if not row['repo_id'] in existed_model_repo_ids:
+            leaderboard_insert_model(row.to_dict())
 
-        leaderboard_insert_model(row.to_dict())
+    tasks = [process(row) for i, row in leaderboard_df.iterrows()]
+    await asyncio.gather(*tasks)

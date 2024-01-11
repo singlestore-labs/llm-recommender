@@ -1,7 +1,7 @@
+import asyncio
 import re
 import json
 import tweepy
-from datetime import datetime
 
 from . import constants
 from . import db
@@ -29,14 +29,14 @@ def twitter_search_posts(keyword, last_created_at):
                 'text': tweet.text,
                 'created_at': tweet.created_at,
             })
-    except Exception:
-        return posts
+    except Exception as e:
+        print('Error twitter_search_posts: ', e)
 
     return posts
 
 
-def twitter_insert_model_posts(model_repo_id, posts):
-    for post in posts:
+async def twitter_insert_model_posts(model_repo_id, posts):
+    async def insert(post):
         try:
             values = []
 
@@ -62,35 +62,28 @@ def twitter_insert_model_posts(model_repo_id, posts):
                         VALUES (%s, %s, %s, FROM_UNIXTIME(%s), JSON_ARRAY_PACK(%s))
                     ''', chunk)
         except Exception as e:
-            print(e)
-            continue
+            print('Error twitter_insert_model_posts: ', e)
+
+    tasks = [insert(model) for model in posts]
+    await asyncio.gather(*tasks)
 
 
-def twitter_process_models_posts(existed_models):
-    for model in existed_models:
+async def twitter_process_models_posts(existed_models):
+    print('Processing Twitter posts')
+
+    async def process(model):
         try:
             repo_id = model['repo_id']
-
-            with db.connection.cursor() as cursor:
-                cursor.execute(f"""
-                    SELECT UNIX_TIMESTAMP(created_at) FROM {constants.MODEL_TWITTER_POSTS_TABLE_NAME}
-                    WHERE model_repo_id = '{repo_id}'
-                    ORDER BY created_at DESC
-                    LIMIT 1
-                """)
-
-                last_crated_at = cursor.fetchone()
-                if (last_crated_at):
-                    last_crated_at = datetime.fromtimestamp(float(last_crated_at[0]))
-                    last_crated_at = last_crated_at.strftime("%Y-%m-%dT%H:%M:%SZ")
-
+            last_created_at = db.db_get_last_created_at(constants.MODEL_TWITTER_POSTS_TABLE_NAME, repo_id, True)
             keyword = model['name'] if re.search(r'\d', model['name']) else repo_id
-            found_posts = twitter_search_posts(keyword, last_crated_at)
+            found_posts = twitter_search_posts(keyword, last_created_at)
 
             if not len(found_posts):
-                continue
+                return
 
-            twitter_insert_model_posts(repo_id, found_posts)
+            await twitter_insert_model_posts(repo_id, found_posts)
         except Exception as e:
-            print(e)
-            continue
+            print('Error twitter_process_models_posts: ', e)
+
+    tasks = [process(model) for model in existed_models]
+    await asyncio.gather(*tasks)
