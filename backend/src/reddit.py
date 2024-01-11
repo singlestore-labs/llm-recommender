@@ -1,7 +1,6 @@
-import asyncio
 import re
 import json
-import asyncpraw
+import praw
 
 from . import constants
 from . import db
@@ -9,48 +8,44 @@ from . import ai
 from . import utils
 
 # https://www.reddit.com/prefs/apps
+reddit = praw.Reddit(
+    username=constants.REDDIT_USERNAME,
+    password=constants.REDDIT_PASSWORD,
+    client_id=constants.REDDIT_CLIENT_ID,
+    client_secret=constants.REDDIT_CLIENT_SECRET,
+    user_agent=constants.REDDIT_USER_AGENT
+)
 
 
-def get_reddit():
-    return asyncpraw.Reddit(
-        username=constants.REDDIT_USERNAME,
-        password=constants.REDDIT_PASSWORD,
-        client_id=constants.REDDIT_CLIENT_ID,
-        client_secret=constants.REDDIT_CLIENT_SECRET,
-        user_agent=constants.REDDIT_USER_AGENT
-    )
-
-
-async def reddit_search_posts(keyword: str, last_created_at):
+def reddit_search_posts(keyword: str, last_created_at):
     posts = []
 
     # https://www.reddit.com/dev/api/#GET_search
     # https://praw.readthedocs.io/en/stable/code_overview/models/subreddit.html#praw.models.Subreddit.search
     try:
-        async with get_reddit() as reddit:
-            subreddit = await reddit.subreddit('all')
-            async for post in subreddit.search(
-                    f'"{keyword}"', sort='relevance', time_filter='year', limit=100
-            ):
-                contains_keyword = keyword in post.title or keyword in post.selftext
+        for post in reddit.subreddit('all').search(
+            f'"{keyword}"', sort='relevance', time_filter='year', limit=100
+        ):
+            contains_keyword = keyword in post.title or keyword in post.selftext
 
-                if contains_keyword and not post.over_18:
-                    if not last_created_at or (post.created_utc > last_created_at):
-                        posts.append({
-                            'post_id': post.id,
-                            'title': post.title,
-                            'text': post.selftext,
-                            'link': f'https://www.reddit.com{post.permalink}',
-                            'created_at': post.created_utc,
-                        })
+            if contains_keyword and not post.over_18:
+                if not last_created_at or (post.created_utc > last_created_at):
+                    posts.append({
+                        'post_id': post.id,
+                        'title': post.title,
+                        'text': post.selftext,
+                        'link': f'https://www.reddit.com{post.permalink}',
+                        'created_at': post.created_utc,
+                    })
     except Exception as e:
         print('Error reddit_search_posts: ', e)
+        return posts
 
     return posts
 
 
-async def reddit_insert_model_posts(model_repo_id, posts):
-    async def insert(post):
+def reddit_insert_model_posts(model_repo_id, posts):
+    for post in posts:
         try:
             values = []
 
@@ -89,26 +84,18 @@ async def reddit_insert_model_posts(model_repo_id, posts):
         except Exception as e:
             print('Error reddit_insert_model_posts: ', e)
 
-    tasks = [insert(model) for model in posts]
-    await asyncio.gather(*tasks)
 
-
-async def reddit_process_models_posts(existed_models):
+def reddit_process_models_posts(existed_models):
     print('Processing Reddit posts')
 
-    async def process(model):
+    for model in existed_models:
         try:
             repo_id = model['repo_id']
             last_created_at = db.db_get_last_created_at(constants.MODEL_REDDIT_POSTS_TABLE_NAME, repo_id)
             keyword = model['name'] if re.search(r'\d', model['name']) else repo_id
-            found_posts = await reddit_search_posts(keyword, last_created_at)
+            found_posts = reddit_search_posts(keyword, last_created_at)
 
-            if not len(found_posts):
-                return
-
-            await reddit_insert_model_posts(repo_id, found_posts)
+            if len(found_posts):
+                reddit_insert_model_posts(repo_id, found_posts)
         except Exception as e:
             print('Error reddit_process_models_posts: ', e)
-
-    tasks = [process(model) for model in existed_models]
-    await asyncio.gather(*tasks)

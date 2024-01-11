@@ -1,4 +1,3 @@
-import asyncio
 import re
 import json
 
@@ -38,17 +37,16 @@ def github_search_repos(keyword: str, last_created_at):
                     'description': repo.description if bool(repo.description) else '',
                     'readme': readme,
                 })
-            except Exception as e:
-                print('Error github_search_repos: ', e)
+            except Exception:
                 continue
-    except Exception as e:
-        print('Error github_search_repos: ', e)
+    except Exception:
+        return repos
 
     return repos
 
 
-async def github_insert_model_repos(model_repo_id, repos):
-    async def insert(repo):
+def github_insert_model_repos(model_repo_id, repos):
+    for repo in repos:
         try:
             values = []
             value = {
@@ -88,26 +86,18 @@ async def github_insert_model_repos(model_repo_id, repos):
         except Exception as e:
             print('Error github_insert_model_repos: ', e)
 
-    tasks = [insert(repo) for repo in repos]
-    await asyncio.gather(*tasks)
 
-
-async def github_process_models_repos(existed_models):
+def github_process_models_repos(existed_models):
     print('Processing GitHub posts')
 
-    async def process(model):
+    for model in existed_models:
         try:
             repo_id = model['repo_id']
             last_created_at = db.db_get_last_created_at(constants.MODEL_GITHUB_REPOS_TABLE_NAME, repo_id, True)
             keyword = model['name'] if re.search(r'\d', model['name']) else repo_id
             found_repos = github_search_repos(keyword, last_created_at)
 
-            if not len(found_repos):
-                return
-
-            await github_insert_model_repos(repo_id, found_repos)
+            if len(found_repos):
+                github_insert_model_repos(repo_id, found_repos)
         except Exception as e:
             print('Error github_process_models_repos: ', e)
-
-    tasks = [process(model) for model in existed_models]
-    await asyncio.gather(*tasks)
