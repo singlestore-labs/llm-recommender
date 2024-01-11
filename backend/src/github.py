@@ -1,45 +1,71 @@
+from importlib.resources import read_text
 import re
 import json
-
-from github import Github
-from github import Auth
+import requests
+from datetime import datetime
+from time import time, sleep
 
 from . import constants
 from . import db
 from . import ai
 from . import utils
 
-github = Github(auth=Auth.Token(constants.GITHUB_ACCESS_TOKEN))
-
 
 def github_search_repos(keyword: str, last_created_at):
     repos = []
+    headers = {'Authorization': f'token {constants.GITHUB_ACCESS_TOKEN}'}
     query = f'"{keyword}" in:name,description,readme'
 
     if last_created_at:
         query += f' created:>{last_created_at}'
 
     try:
-        for repo in github.search_repositories(query):
-            try:
-                readme_file = repo.get_readme()
+        repos_response = requests.get(
+            "https://api.github.com/search/repositories",
+            headers=headers,
+            params={'q': query}
+        )
 
-                if readme_file.size > 7000:
+        if repos_response.status_code == 403:
+            # Handle rate limiting
+            rate_limit = repos_response.headers['X-RateLimit-Reset']
+            if not rate_limit:
+                return repos
+
+            sleep_time = int(rate_limit) - int(time())
+            if sleep_time > 0:
+                print(f"Rate limit exceeded. Retrying in {sleep_time} seconds.")
+            sleep(sleep_time)
+            return github_search_repos(keyword, last_created_at)
+
+        if repos_response.status_code != 200:
+            return repos
+
+        for repo in repos_response.json().get('items', []):
+            try:
+                readme_response = requests.get(repo['contents_url'].replace('{+path}', 'README.md'), headers=headers)
+                if repos_response.status_code != 200:
                     continue
 
-                readme = readme_file.decoded_content.decode('utf-8')
+                readme_file = readme_response.json()
+                if readme_file['size'] > 7000:
+                    continue
+
+                readme_text = requests.get(readme_file['download_url']).text
+                if not readme_text:
+                    continue
 
                 repos.append({
-                    'repo_id': repo.id,
-                    'name': repo.name,
-                    'link': repo.html_url,
-                    'created_at': repo.created_at.timestamp(),
-                    'description': repo.description if bool(repo.description) else '',
-                    'readme': readme,
+                    'repo_id': repo['id'],
+                    'name': repo['name'],
+                    'link': repo['html_url'],
+                    'created_at': datetime.strptime(repo['created_at'], '%Y-%m-%dT%H:%M:%SZ').timestamp(),
+                    'description': repo.get('description', ''),
+                    'readme': readme_text,
                 })
-            except Exception:
+            except:
                 continue
-    except Exception:
+    except:
         return repos
 
     return repos
