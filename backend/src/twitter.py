@@ -19,7 +19,7 @@ def twitter_search_posts(keyword, last_created_at):
             query=f'{keyword} -is:retweet',
             tweet_fields=['id', 'text', 'created_at'],
             start_time=last_created_at,
-            max_results=10
+            max_results=100
         )
 
         for tweet in tweets.data:
@@ -58,7 +58,7 @@ def twitter_insert_model_posts(model_repo_id, posts):
                 with db.connection.cursor() as cursor:
                     cursor.executemany(f'''
                         INSERT INTO {constants.MODEL_TWITTER_POSTS_TABLE_NAME} (model_repo_id, post_id, clean_text, created_at, embedding)
-                        VALUES (%s, %s, %s, FROM_UNIXTIME(%s), JSON_ARRAY_PACK(%s))
+                        VALUES (%s, %s, %s, %s, JSON_ARRAY_PACK(%s))
                     ''', chunk)
         except Exception as e:
             print('Error twitter_insert_model_posts: ', e)
